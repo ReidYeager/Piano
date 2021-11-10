@@ -1,0 +1,2 @@
+\PianoCore\src\platform\platform.cpp
+	Line     7 :--: // TODO : ~!!~ Logger

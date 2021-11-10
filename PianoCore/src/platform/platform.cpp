@@ -1,12 +1,30 @@
-#pragma once
 
 #include "defines.h"
+#include "platform/platform.h"
 
 #include <GLFW/glfw3.h>
-
 #include <stdio.h>
 
-GLFWwindow* InitializeWindow(u32 _width, u32 _height, const char* _title)
+// TODO : ~!!~ Logger
+
+GLFWwindow* Platform::Initialize(u32 _width, u32 _height)
+{
+  // Initialize GLFW
+  window = InitializeWindow(_width, _height);
+  return window;
+}
+
+void Platform::Shutdown()
+{
+  glfwDestroyWindow(window);
+}
+
+b8 Platform::ShouldClose()
+{
+  return glfwWindowShouldClose(window);
+}
+
+GLFWwindow* Platform::InitializeWindow(u32 _width, u32 _height)
 {
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -15,7 +33,7 @@ GLFWwindow* InitializeWindow(u32 _width, u32 _height, const char* _title)
   glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-  GLFWwindow* w = glfwCreateWindow(800, 600, "Piano", nullptr, nullptr);
+  GLFWwindow* w = glfwCreateWindow(_width, _height, "PianoHero", nullptr, nullptr);
   if (w == nullptr)
   {
     printf("Failed to opend glfw window\n");

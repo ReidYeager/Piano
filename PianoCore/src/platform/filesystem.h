@@ -5,7 +5,7 @@
 #include <fstream>
 #include <vector>
 
-std::vector<char> LoadFile(const char* _dir)
+inline std::vector<char> LoadFile(const char* _dir)
 {
   std::ifstream file;
   file.open(_dir, std::ios::ate);

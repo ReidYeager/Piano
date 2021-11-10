@@ -1,22 +1,23 @@
-#pragma once
 
 #include "defines.h"
-#include "filesystem.h"
 
+#include "renderer/renderer.h"
+#include "renderer/shader.h"
+#include "platform/filesystem.h"
+
+#include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+#include <stdio.h>
+#include <fstream>
 #include <vector>
+#include <string>
+#include <iostream>
+#include <math.h>
 
-struct material_t
-{
-  u32 vbo;
-  u32 vao;
-  u32 ebo;
-
-  const char* vertFile;
-  const char* fragFile;
-  u32 shaderProgram;
-};
-
-static std::vector<material_t> materials;
+std::vector<material_t> materials;
 
 float vertices[] = {
   -0.5f, -0.5f, 0.0f,
@@ -29,7 +30,45 @@ int indices[] = {
   2, 3, 0
 };
 
-u32 LoadShader(const char* _filename, GLenum _stage)
+
+void Renderer::Initialize(Platform* _platform)
+{
+  platform = _platform;
+
+  // Initialize GLAD / OpenGL
+  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+  {
+    printf("Failed to initialize GLAD\n");
+    throw(-1);
+  }
+
+  glViewport(0, 0, 800, 600);
+
+  GetShaderProgram({ "base.vert", "base.frag" }, { GL_VERTEX_SHADER, GL_FRAGMENT_SHADER });
+}
+
+void Renderer::RenderFrame(glm::mat4 mvp)
+{
+  glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+  glClear(GL_COLOR_BUFFER_BIT);
+
+  for (const auto& m : materials)
+  {
+    glUseProgram(m.shaderProgram);
+    u32 matid = glGetUniformLocation(m.shaderProgram, "mvp");
+    glUniformMatrix4fv(matid, 1, GL_FALSE, glm::value_ptr(mvp));
+    glBindVertexArray(m.vao);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m.ebo);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+  }
+}
+
+void Renderer::Shutdown()
+{
+  // destroy objects
+}
+
+u32 Renderer::LoadShader(const char* _filename, GLenum _stage)
 {
   std::string dir = "./res/shaders/";
   dir.append(_filename);
@@ -58,7 +97,7 @@ u32 LoadShader(const char* _filename, GLenum _stage)
   return shader;
 }
 
-material_t CreateShaderProgram(std::vector<const char*> _filenames, std::vector<GLenum> _stages)
+material_t Renderer::CreateShaderProgram(std::vector<const char*> _filenames, std::vector<GLenum> _stages)
 {
   material_t s;
 
@@ -105,7 +144,7 @@ material_t CreateShaderProgram(std::vector<const char*> _filenames, std::vector<
   return s;
 }
 
-u32 GetShaderProgram(std::vector<const char*> _filenames, std::vector<GLenum> _stages)
+u32 Renderer::GetShaderProgram(std::vector<const char*> _filenames, std::vector<GLenum> _stages)
 {
   u32 i = 0;
   for (const auto& s : materials)
