@@ -70,7 +70,7 @@ void Renderer::Shutdown()
 
 u32 Renderer::LoadShader(const char* _filename, GLenum _stage)
 {
-  std::string dir = "./res/shaders/";
+  std::string dir = PIANO_RESOURCE_SHADER_DIR;
   dir.append(_filename);
 
   std::vector<char> code = LoadFile(dir.c_str());

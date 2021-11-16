@@ -23,3 +23,8 @@ typedef double             f64;
 typedef unsigned char      b8;
 typedef unsigned int       b32;
 
+// TODO : Make these dynamic?
+#define PIANO_RESOURCE_TEXTURE_DIR "../../../PianoHero/res/textures/"
+#define PIANO_RESOURCE_SHADER_DIR "../../../PianoHero/res/shaders/"
+#define PIANO_RESOURCE_MODEL_DIR "../../../PianoHero/res/models/"
+
