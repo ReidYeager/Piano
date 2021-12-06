@@ -4,6 +4,8 @@
 
 #include "defines.h"
 
+#include "math/vector.h"
+
 #include "GLFW/glfw3.h"
 
 extern class Platform
@@ -15,7 +17,7 @@ public:
   // Initializes platform-dependent components
   // Param : _width = The window width in pixels
   // Param : _height = The window height in pixels
-  GLFWwindow* Initialize(u32 _width, u32 _height);
+  GLFWwindow* Initialize(vec2 _windowExtents);
   // Destroys platform-dependent components
   void Shutdown();
 
@@ -26,6 +28,6 @@ public:
 private:
   GLFWwindow* InitializeWindow(u32 _width, u32 _height);
 
-} pianoPlatform;
+} platform;
 
 #endif // !PIANO_PLATFORM_PLATFORM_H_

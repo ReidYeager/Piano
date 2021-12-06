@@ -4,6 +4,8 @@
 #include "renderer/renderer.h"
 #include "renderer/shader.h"
 #include "platform/filesystem.h"
+#include "platform/platform.h"
+#include "math/vector.h"
 
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -17,15 +19,15 @@
 #include <iostream>
 #include <math.h>
 
-Renderer pianoRenderer;
+Renderer renderer;
 
 std::vector<material_t> materials;
 
 float vertices[] = {
-  -0.5f, -0.5f, 0.0f,
-  -0.5f,  0.5f, 0.0f,
-   0.5f,  0.5f, 0.0f,
-   0.5f, -0.5f, 0.0f,
+  -0.5f, 0.0f, 0.0f, // BL
+  -0.5f, 1.0f, 0.0f, // TL
+   0.5f, 1.0f, 0.0f, // TR
+   0.5f, 0.0f, 0.0f, // BR
 };
 int indices[] = {
   0, 1, 2,
@@ -33,10 +35,8 @@ int indices[] = {
 };
 
 
-void Renderer::Initialize(Platform* _platform)
+void Renderer::Initialize(vec2 _windowExtents)
 {
-  platform = _platform;
-
   // Initialize GLAD / OpenGL
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
   {
@@ -49,16 +49,18 @@ void Renderer::Initialize(Platform* _platform)
   GetShaderProgram({ "base.vert", "base.frag" }, { GL_VERTEX_SHADER, GL_FRAGMENT_SHADER });
 }
 
-void Renderer::RenderFrame(glm::mat4 mvp)
+void Renderer::RenderFrame(std::vector<glm::mat4> _mvps)
 {
   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
   glClear(GL_COLOR_BUFFER_BIT);
 
-  for (const auto& m : materials)
+  material_t& m = materials[0];
+  glUseProgram(m.shaderProgram);
+  u32 matid = glGetUniformLocation(m.shaderProgram, "mvp");
+
+  for (const auto& transform : _mvps)
   {
-    glUseProgram(m.shaderProgram);
-    u32 matid = glGetUniformLocation(m.shaderProgram, "mvp");
-    glUniformMatrix4fv(matid, 1, GL_FALSE, glm::value_ptr(mvp));
+    glUniformMatrix4fv(matid, 1, GL_FALSE, glm::value_ptr(transform));
     glBindVertexArray(m.vao);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m.ebo);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);

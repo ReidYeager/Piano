@@ -6,7 +6,6 @@
 
 #include "renderer/shader.h"
 #include "math/vector.h"
-#include "platform/platform.h"
 #include "ui/ui_element.h"
 
 #include <glm/glm.hpp>
@@ -17,7 +16,7 @@
 extern class Renderer
 {
 private:
-  Platform* platform;
+  vec2 windowExtents = {0, 0};
 
 private:
   u32 LoadShader(const char* _filename, GLenum _stage);
@@ -25,8 +24,8 @@ private:
   u32 GetShaderProgram(std::vector<const char*> _filenames, std::vector<GLenum> _stages);
 
 public:
-  void Initialize(Platform* _platform);
-  void RenderFrame(glm::mat4 mvp);
+  void Initialize(vec2 _windowExtents);
+  void RenderFrame(std::vector<glm::mat4> _mvps);
   void Shutdown();
 
   // Adds a note to the timeline scene
@@ -53,6 +52,6 @@ public:
   UiElement CreateUiElement(vec2 _position, vec2 _extents);
 
 
-} pianoRenderer;
+} renderer;
 
 #endif //!PIANO_RENDERER_RENDERER_H_

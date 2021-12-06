@@ -14,8 +14,10 @@
 struct phApplicationSettings
 {
   void(*Initialize)();
-  void(*Update)(double);
+  void(*Update)(float);
   void(*Shutdown)();
+
+  vec2 windowExtents;
 };
 
 // Defines API function calls
@@ -25,8 +27,10 @@ private:
   struct
   {
     void(*ClientInitialize)();
-    void(*ClientUpdate)(double);
+    void(*ClientUpdate)(float);
     void(*ClientShutdown)();
+
+    vec2 windowExtents;
   } context;
 
 private:
@@ -36,13 +40,16 @@ private:
   void MainLoop();
   // Destroys the engine's components
   void Shutdown();
-
+  // Updates the input state
   void HandleInput(GLFWwindow* _window);
+
+  // Handles some game back-end data
+  void Update();
 
 public:
   void Run(phApplicationSettings* _settings);
 
-  void PlaceNoteOnTimeline(u32 _note, float _startTime, float _duration);
+  void PlaceNoteOnTimeline(u32 _note, f32 _startTime, f32 _duration);
   UiElement AddUiElement(vec2 _position, vec2 _scale = {1, 1});
 
 };

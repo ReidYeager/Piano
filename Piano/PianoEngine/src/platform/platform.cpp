@@ -1,18 +1,20 @@
 
 #include "defines.h"
+
 #include "platform/platform.h"
+#include "math/vector.h"
 
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 
 // TODO : ~!!~ Logger
 
-Platform pianoPlatform;
+Platform platform;
 
-GLFWwindow* Platform::Initialize(u32 _width, u32 _height)
+GLFWwindow* Platform::Initialize(vec2 _windowExtents)
 {
   // Initialize GLFW
-  window = InitializeWindow(_width, _height);
+  window = InitializeWindow(_windowExtents.width, _windowExtents.height);
   return window;
 }
 
