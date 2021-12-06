@@ -17,6 +17,8 @@
 #include <iostream>
 #include <math.h>
 
+Renderer pianoRenderer;
+
 std::vector<material_t> materials;
 
 float vertices[] = {

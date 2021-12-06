@@ -6,4 +6,5 @@ cmake_minimum_required (VERSION 3.8)
 project ("Piano")
 
 # Include sub-projects.
-add_subdirectory ("PianoHero")
+add_subdirectory ("PianoEngine")
+add_subdirectory ("PianoGame")

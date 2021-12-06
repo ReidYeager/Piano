@@ -14,7 +14,7 @@
 
 #include <vector>
 
-class Renderer
+extern class Renderer
 {
 private:
   Platform* platform;
@@ -53,6 +53,6 @@ public:
   UiElement CreateUiElement(vec2 _position, vec2 _extents);
 
 
-};
+} pianoRenderer;
 
 #endif //!PIANO_RENDERER_RENDERER_H_

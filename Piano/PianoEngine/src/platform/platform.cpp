@@ -7,6 +7,8 @@
 
 // TODO : ~!!~ Logger
 
+Platform pianoPlatform;
+
 GLFWwindow* Platform::Initialize(u32 _width, u32 _height)
 {
   // Initialize GLFW
@@ -30,7 +32,6 @@ GLFWwindow* Platform::InitializeWindow(u32 _width, u32 _height)
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 4);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-  glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
   GLFWwindow* w = glfwCreateWindow(_width, _height, "PianoHero", nullptr, nullptr);

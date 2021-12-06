@@ -6,7 +6,7 @@
 
 #include "GLFW/glfw3.h"
 
-class Platform
+extern class Platform
 {
 private:
   GLFWwindow* window;
@@ -26,6 +26,6 @@ public:
 private:
   GLFWwindow* InitializeWindow(u32 _width, u32 _height);
 
-};
+} pianoPlatform;
 
 #endif // !PIANO_PLATFORM_PLATFORM_H_
