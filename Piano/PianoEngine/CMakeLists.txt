@@ -3,6 +3,14 @@
 #
 cmake_minimum_required (VERSION 3.8)
 
+#set(GLFW_BUILD_DOCS OFF CAHCE BOOL "" FORCE)
+#set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+#set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+
+add_subdirectory(glfw_repo)
+
+find_package(OpenGL REQUIRED)
+
 # Add source to this project's executable.
 add_library (PianoEngine STATIC
  
@@ -22,16 +30,18 @@ add_library (PianoEngine STATIC
 
 target_include_directories(PianoEngine PRIVATE
  ./src
- ../libraries/include
+ ${CMAKE_SOURCE_DIR}/libraries/include
 )
 
 target_link_directories (PianoEngine PRIVATE
  ./src
- ../libraries/lib
+ ${CMAKE_SOURCE_DIR}/libraries/lib
 )
 
 target_link_libraries(PianoEngine
- glfw3.lib
+ glfw
+ OpenGL::GL
 )
 
-# TODO: Add tests and install targets if needed.
+add_compile_definitions(PIANO_RESOURCE_DIR="${CMAKE_SOURCE_DIR}/PianoGame/res/")
+

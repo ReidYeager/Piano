@@ -24,7 +24,7 @@ typedef unsigned char      b8;
 typedef unsigned int       b32;
 
 // TODO : Make these dynamic?
-#define PIANO_RESOURCE_TEXTURE_DIR "../../../PianoGame/res/textures/"
-#define PIANO_RESOURCE_SHADER_DIR  "../../../PianoGame/res/shaders/"
-#define PIANO_RESOURCE_MODEL_DIR   "../../../PianoGame/res/models/"
+//#define PIANO_RESOURCE_TEXTURE_DIR "../../../PianoGame/res/textures/"
+//#define PIANO_RESOURCE_SHADER_DIR  "../../../PianoGame/res/shaders/"
+//#define PIANO_RESOURCE_MODEL_DIR   "../../../PianoGame/res/models/"
 

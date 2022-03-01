@@ -3,10 +3,14 @@
 #
 cmake_minimum_required (VERSION 3.8)
 
+
+
 # Add source to this project's executable.
 add_executable (PianoGame
  "src/source.cpp"
  )
+
+find_package(OpenGL REQUIRED)
 
 target_include_directories(PianoGame PRIVATE
  ./src
@@ -21,7 +25,8 @@ target_link_directories (PianoGame PRIVATE
 )
 
 target_link_libraries(PianoGame
- glfw3.lib
+ glfw
+ OpenGL::GL
  PianoEngine
 )
 

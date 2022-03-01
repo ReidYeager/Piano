@@ -37,16 +37,22 @@ int indices[] = {
 
 void Renderer::Initialize(vec2 _windowExtents)
 {
+	printf(">>> Begin Render init\n");
   // Initialize GLAD / OpenGL
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
   {
     printf("Failed to initialize GLAD\n");
     throw(-1);
   }
+  printf(">>> Glad Initialized\n");
 
   glViewport(0, 0, 800, 600);
+  
+  printf(">>> Viewport created\n");
 
   GetShaderProgram({ "base.vert", "base.frag" }, { GL_VERTEX_SHADER, GL_FRAGMENT_SHADER });
+  
+  printf(">>> Shader created\n");
 }
 
 void Renderer::RenderFrame(std::vector<glm::mat4> _mvps)
@@ -74,7 +80,8 @@ void Renderer::Shutdown()
 
 u32 Renderer::LoadShader(const char* _filename, GLenum _stage)
 {
-  std::string dir = PIANO_RESOURCE_SHADER_DIR;
+  std::string dir = PIANO_RESOURCE_DIR;
+  dir.append("shaders/");
   dir.append(_filename);
 
   std::vector<char> code = LoadFile(dir.c_str());
@@ -103,21 +110,27 @@ u32 Renderer::LoadShader(const char* _filename, GLenum _stage)
 
 material_t Renderer::CreateShaderProgram(std::vector<const char*> _filenames, std::vector<GLenum> _stages)
 {
+  printf(">>> <<< Shader creation start\n");
   material_t s;
 
   u32 vs, fs;
 
   // Set up shader
+  printf(">>> >>> Load vertex shader : %s\n", _filenames[0]);
   vs = LoadShader(_filenames[0], GL_VERTEX_SHADER);
+  printf(">>> >>> Load fragment shader : %s\n", _filenames[1]);
   fs = LoadShader(_filenames[1], GL_FRAGMENT_SHADER);
 
   s.vertFile = _filenames[0];
   s.fragFile = _filenames[1];
 
+  printf(">>> >>> Create shader program\n");
   s.shaderProgram = glCreateProgram();
   glAttachShader(s.shaderProgram, vs);
   glAttachShader(s.shaderProgram, fs);
   glLinkProgram(s.shaderProgram);
+  
+  printf(">>> >>> Get program\n");
 
   int success;
   char infoLog[512];
@@ -130,11 +143,19 @@ material_t Renderer::CreateShaderProgram(std::vector<const char*> _filenames, st
   glDeleteShader(vs);
   glDeleteShader(fs);
 
+  printf(">>> >>> Gen buffer info\n");
+
+	printf("%u\n", s.vao);
+
   // Bind the vertex array to the shader program
   glGenBuffers(1, &s.vbo);
+  printf(">> a\n");
   glGenBuffers(1, &s.ebo);
+  printf(">> b\n");
   glGenVertexArrays(1, &s.vao);
+  printf(">> c\n");
 
+  printf(">>> >>> Bind buffer info\n");
   glBindVertexArray(s.vao);
 
   glBindBuffer(GL_ARRAY_BUFFER, s.vbo);
@@ -145,11 +166,13 @@ material_t Renderer::CreateShaderProgram(std::vector<const char*> _filenames, st
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s.ebo);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
+  printf(">>> >>> Material created\n");
   return s;
 }
 
 u32 Renderer::GetShaderProgram(std::vector<const char*> _filenames, std::vector<GLenum> _stages)
 {
+	printf(">>> <<< Check for material\n");
   u32 i = 0;
   for (const auto& s : materials)
   {

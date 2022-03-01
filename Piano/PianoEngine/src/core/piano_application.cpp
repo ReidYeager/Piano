@@ -11,6 +11,7 @@
 #include <chrono>
 #include <math.h>
 #include <vector>
+#include <stdio.h>
 
 // =======================
 // Engine Initialization
@@ -39,8 +40,12 @@ void PianoApplication::Run(phApplicationSettings* _settings)
 
 void PianoApplication::Initialize(phApplicationSettings* _settings)
 {
+	printf("<<< Init\n");
+	printf("<<< Platform Init\n");
   platform.Initialize(_settings->windowExtents);
+  printf("<<< Renderer Init\n");
   renderer.Initialize(_settings->windowExtents);
+	printf("<<< Client Init\n");
 
   context.ClientInitialize = _settings->Initialize;
   context.ClientUpdate = _settings->Update;
@@ -71,6 +76,7 @@ void PianoApplication::HandleInput(GLFWwindow* _window)
 
 void PianoApplication::MainLoop()
 {
+	printf("-------------- Entered main loop\n");
   auto start = std::chrono::steady_clock::now();
   auto end = std::chrono::steady_clock::now();
   auto deltaTime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
@@ -81,9 +87,11 @@ void PianoApplication::MainLoop()
 
   // TMP
   glm::mat4 mvp;
+  u32 frameCount = 0;
 
   while (!platform.ShouldClose())
   {
+	printf(">>>> Frame %u\n", frameCount++);
     // Frame initializtation =====
     {
       start = end;

@@ -1,0 +1,3 @@
+[submodule "Piano/PianoEngine/glfw_repo"]
+	path = Piano/PianoEngine/glfw_repo
+	url = https://github.com/glfw/glfw
