@@ -4,54 +4,40 @@
 
 #include "defines.h"
 
-#include "renderer/shader.h"
+#include "renderer/renderer_context.h"
+
 #include "math/vector.h"
-#include "ui/ui_element.h"
 
-#include <glm/glm.hpp>
-#include <GLFW/glfw3.h>
+namespace Piano {
+  struct Material
+  {
+    u32 vbo;
+    u32 vao;
+    u32 ebo;
 
-#include <vector>
+    const char* vertFile;
+    const char* fragFile;
+    u32 shaderProgram;
+  };
 
-extern class Renderer
-{
-private:
-  vec2 windowExtents = {0, 0};
+  namespace Renderer {
+    struct RendererSettings
+    {
+      vec2 windowExtents;
 
-private:
-  u32 LoadShader(const char* _filename, GLenum _stage);
-  material_t CreateShaderProgram(std::vector<const char*> _filenames, std::vector<GLenum> _stages);
-  u32 GetShaderProgram(std::vector<const char*> _filenames, std::vector<GLenum> _stages);
+      Piano::Renderer::CameraSettings camera;
+    };
 
-public:
-  void Initialize(vec2 _windowExtents);
-  void RenderFrame(std::vector<glm::mat4> _mvps);
-  void Shutdown();
+    // Initializes OpenGL and creates a surface and swapchain
+    void Initialize(Piano::Renderer::RendererSettings _settings);
+    void RenderFrame();
+    void Shutdown();
 
-  // Adds a note to the timeline scene
-  // Param : _note = The location of the note on the timeline's X axis
-  // Param : _startTime = The location of the start of the note on the timeline's time axis (y)
-  // Param : _duration = The scale of the note on the timeline's time axis (y)
-  void AddNoteToTimeline(u32 _note, float _startTime, float _duration);
-  // Add color? Effects?
-
-  // Plays a particle effect at a location on screen
-  // Does nothing until a particle system is implemented
-  // Param : _effect = The effect to be played (Placeholder, for future use)
-  // Param : _position = The screen position in pixel coordinates to play to effect
-  void PlayEffect(vec2 _position, void* _effect);
-
-  // Abstracts away the exact positioning for playing an effect above a key
-  // Param : _effect = The effect to be played (Placeholder, for future use)
-  // Param : _note = The note to play the effect above
-  void PlayEffect(void* _effect, u32 _note);
-
-  // Adds an element onto the screen
-  // Param : _position = The location of the element's top-left corner in pixel coordinates
-  // Param : _extents = The width (x) and height (y) of the element in pixels
-  UiElement CreateUiElement(vec2 _position, vec2 _extents);
-
-
-} renderer;
+    // Functionality =====
+    // Changes the camera's projection of the roll
+    void RecalibrateCamera(Piano::Renderer::CameraSettings _settings);
+    // Places the camera at the given time on the roll
+    void PlaceCamera(f32 _time);
+} }
 
 #endif //!PIANO_RENDERER_RENDERER_H_

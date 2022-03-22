@@ -1,84 +1,29 @@
 
 #include "defines.h"
+#include "logger.h"
 
 #include "renderer/renderer.h"
-#include "renderer/shader.h"
 #include "platform/filesystem.h"
-#include "platform/platform.h"
-#include "math/vector.h"
 
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <stdio.h>
-#include <fstream>
-#include <vector>
 #include <string>
-#include <iostream>
-#include <math.h>
+#include <vector>
 
-Renderer renderer;
+const glm::mat4 identityMatrix = glm::mat4(1.0f);
 
-std::vector<material_t> materials;
+Piano::Material noteMaterial;
+glm::mat4 projectionMatrix;
+glm::mat4 viewProjectionMatrix = glm::mat4(1.0f);
 
-float vertices[] = {
-  -0.5f, 0.0f, 0.0f, // BL
-  -0.5f, 1.0f, 0.0f, // TL
-   0.5f, 1.0f, 0.0f, // TR
-   0.5f, 0.0f, 0.0f, // BR
-};
-int indices[] = {
-  0, 1, 2,
-  2, 3, 0
-};
+//=========================
+// Init & Shutdown
+//=========================
 
-
-void Renderer::Initialize(vec2 _windowExtents)
-{
-	printf(">>> Begin Render init\n");
-  // Initialize GLAD / OpenGL
-  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-  {
-    printf("Failed to initialize GLAD\n");
-    throw(-1);
-  }
-  printf(">>> Glad Initialized\n");
-
-  glViewport(0, 0, 800, 600);
-  
-  printf(">>> Viewport created\n");
-
-  GetShaderProgram({ "base.vert", "base.frag" }, { GL_VERTEX_SHADER, GL_FRAGMENT_SHADER });
-  
-  printf(">>> Shader created\n");
-}
-
-void Renderer::RenderFrame(std::vector<glm::mat4> _mvps)
-{
-  glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-  glClear(GL_COLOR_BUFFER_BIT);
-
-  material_t& m = materials[0];
-  glUseProgram(m.shaderProgram);
-  u32 matid = glGetUniformLocation(m.shaderProgram, "mvp");
-
-  for (const auto& transform : _mvps)
-  {
-    glUniformMatrix4fv(matid, 1, GL_FALSE, glm::value_ptr(transform));
-    glBindVertexArray(m.vao);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m.ebo);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-  }
-}
-
-void Renderer::Shutdown()
-{
-  // destroy objects
-}
-
-u32 Renderer::LoadShader(const char* _filename, GLenum _stage)
+u32 LoadShader(const char* _filename, GLenum _stage)
 {
   std::string dir = PIANO_RESOURCE_DIR;
   dir.append("shaders/");
@@ -92,9 +37,10 @@ u32 Renderer::LoadShader(const char* _filename, GLenum _stage)
   }
 
   char* c = code.data();
+  int size = code.size();
 
   u32 shader = glCreateShader(_stage);
-  glShaderSource(shader, 1, reinterpret_cast<GLchar**>(&c), nullptr);
+  glShaderSource(shader, 1, reinterpret_cast<GLchar**>(&c), (GLint*)&size);
   glCompileShader(shader);
 
   int success;
@@ -108,84 +54,138 @@ u32 Renderer::LoadShader(const char* _filename, GLenum _stage)
   return shader;
 }
 
-material_t Renderer::CreateShaderProgram(std::vector<const char*> _filenames, std::vector<GLenum> _stages)
+void CreateShader(const char* _vert, const char* _frag)
 {
-  printf(">>> <<< Shader creation start\n");
-  material_t s;
-
+  noteMaterial = {};
   u32 vs, fs;
 
-  // Set up shader
-  printf(">>> >>> Load vertex shader : %s\n", _filenames[0]);
-  vs = LoadShader(_filenames[0], GL_VERTEX_SHADER);
-  printf(">>> >>> Load fragment shader : %s\n", _filenames[1]);
-  fs = LoadShader(_filenames[1], GL_FRAGMENT_SHADER);
+  // Create shader stages =====
+  vs = LoadShader(_vert, GL_VERTEX_SHADER);
+  fs = LoadShader(_frag, GL_FRAGMENT_SHADER);
 
-  s.vertFile = _filenames[0];
-  s.fragFile = _filenames[1];
+  noteMaterial.vertFile = _vert;
+  noteMaterial.fragFile = _frag;
 
-  printf(">>> >>> Create shader program\n");
-  s.shaderProgram = glCreateProgram();
-  glAttachShader(s.shaderProgram, vs);
-  glAttachShader(s.shaderProgram, fs);
-  glLinkProgram(s.shaderProgram);
-  
-  printf(">>> >>> Get program\n");
+  // Setup shader program =====
+  noteMaterial.shaderProgram = glCreateProgram();
+  glAttachShader(noteMaterial.shaderProgram, vs);
+  glAttachShader(noteMaterial.shaderProgram, fs);
+  glLinkProgram(noteMaterial.shaderProgram);
 
   int success;
   char infoLog[512];
-  glGetProgramiv(s.shaderProgram, GL_LINK_STATUS, &success);
-  if (!success) {
-    glGetProgramInfoLog(s.shaderProgram, 512, NULL, infoLog);
-    printf("Program linking failed\n%s\n", infoLog);
+  glGetProgramiv(noteMaterial.shaderProgram, GL_LINK_STATUS, &success);
+  if (!success)
+  {
+    glGetProgramInfoLog(noteMaterial.shaderProgram, 512, NULL, infoLog);
+    PianoLogFatal("Program linking failed\n%s\n", infoLog);
+    throw(-1);
   }
 
   glDeleteShader(vs);
   glDeleteShader(fs);
 
-  printf(">>> >>> Gen buffer info\n");
+  // Bind vertex info =====
+  glGenBuffers(1, &noteMaterial.vbo);
+  glGenBuffers(1, &noteMaterial.ebo);
+  glGenVertexArrays(1, &noteMaterial.vao);
 
-	printf("%u\n", s.vao);
+  glBindVertexArray(noteMaterial.vao);
 
-  // Bind the vertex array to the shader program
-  glGenBuffers(1, &s.vbo);
-  printf(">> a\n");
-  glGenBuffers(1, &s.ebo);
-  printf(">> b\n");
-  glGenVertexArrays(1, &s.vao);
-  printf(">> c\n");
+  const vec3 vertices[4] = {
+    { 1.0f, 1.0f, 0.0f}, // TR
+    { 1.0f, 0.0f, 0.0f}, // BR
+    { 0.0f, 0.0f, 0.0f}, // BL
+    { 0.0f, 1.0f, 0.0f}  // TL
+  };
 
-  printf(">>> >>> Bind buffer info\n");
-  glBindVertexArray(s.vao);
+  const u32 indices[6] = {
+      0, 1, 3,
+      1, 2, 3
+  };
 
-  glBindBuffer(GL_ARRAY_BUFFER, s.vbo);
+  glBindBuffer(GL_ARRAY_BUFFER, noteMaterial.vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-  glEnableVertexAttribArray(0);
 
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s.ebo);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, noteMaterial.ebo);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-  printf(">>> >>> Material created\n");
-  return s;
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+  glEnableVertexAttribArray(0);
 }
 
-u32 Renderer::GetShaderProgram(std::vector<const char*> _filenames, std::vector<GLenum> _stages)
+void Piano::Renderer::Initialize(Piano::Renderer::RendererSettings _settings)
 {
-	printf(">>> <<< Check for material\n");
-  u32 i = 0;
-  for (const auto& s : materials)
+  // Initialize GLAD / OpenGL =====
+  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
   {
-    if (std::strcmp(s.vertFile, _filenames[0]) == 0 && std::strcmp(s.fragFile, _filenames[1]) == 0)
-    {
-      return s.shaderProgram;
-    }
-
-    i++;
+    printf("Failed to initialize GLAD\n");
+    throw(-1);
   }
 
-  i = materials.size();
-  materials.push_back(CreateShaderProgram(_filenames, _stages));
+  // Create swapchain
+  glViewport(0, 0, _settings.windowExtents.x, _settings.windowExtents.y);
 
-  return materials[i].shaderProgram;
+  RecalibrateCamera(_settings.camera);
+  PlaceCamera(0.0f);
+
+  // Create the note shader
+  CreateShader("base.vert", "base.frag");
+}
+
+void Piano::Renderer::Shutdown()
+{
+  
+}
+
+//=========================
+// Update
+//=========================
+
+void Piano::Renderer::RenderFrame()
+{
+  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT);
+
+  glUseProgram(noteMaterial.shaderProgram);
+  u32 noteTransformID = glGetUniformLocation(noteMaterial.shaderProgram, "worldspaceTransform");
+  u32 viewID = glGetUniformLocation(noteMaterial.shaderProgram, "viewMatrix");
+
+  glUniformMatrix4fv(noteTransformID, 1, GL_FALSE, glm::value_ptr(identityMatrix));
+  glUniformMatrix4fv(viewID, 1, GL_FALSE, glm::value_ptr(viewProjectionMatrix));
+
+  // For each note =====
+  {
+    // Use the note's transform
+    //glUniformMatrix4fv(matid, 1, GL_FALSE, glm::value_ptr(transform));
+
+    // Render one note quad =====
+    glBindVertexArray(noteMaterial.vao);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
+  }
+}
+
+//=========================
+// Functionality
+//=========================
+
+void Piano::Renderer::RecalibrateCamera(CameraSettings _settings)
+{
+  // TODO : Properly calculate the camera width calibration value (currently using random values)
+
+  f32 right = 0.0f;
+  switch (_settings.keyboardLayout)
+  {
+  case Keyboard_Full: right = 2.0f; break;
+  case Keyboard_Half: right = 1.0f; break;
+  }
+
+  projectionMatrix = glm::ortho(0.0f, right, 0.0f, _settings.previewLength);
+}
+
+void Piano::Renderer::PlaceCamera(f32 _time)
+{
+  glm::mat4 view = glm::translate(identityMatrix, glm::vec3(0.0f, _time, -0.5f));
+  viewProjectionMatrix = view * projectionMatrix;
 }

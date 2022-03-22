@@ -13,20 +13,18 @@ find_package(OpenGL REQUIRED)
 
 # Add source to this project's executable.
 add_library (PianoEngine STATIC
- 
  "src/platform/glad.c"
  "src/defines.h"
  "src/ui/ui_element.h"
  "src/renderer/renderer.cpp"
  "src/renderer/renderer.h"
- "src/renderer/shader.h"
  "src/platform/platform.h"
  "src/platform/platform.cpp"
  "src/platform/filesystem.h"
  "src/math/vector.h"
  "src/core/piano_application.cpp"
  "src/core/piano_application.h"
- "src/core/global_stats.h" "src/piano_hero.h")
+ "src/piano_hero.h" "src/logger.h" "src/renderer/renderer_context.h")
 
 target_include_directories(PianoEngine PRIVATE
  ./src

@@ -1,17 +1,17 @@
 
 #include <piano_hero.h>
+#include <logger.h>
 
-#include <core/global_stats.h>
-
+#include <math.h>
 #include <stdio.h>
 #include <random>
 
-PianoApplication app;
+Piano::Application app;
 
 // Return false if a fatal error occurs
 void Init()
 {
-  printf("TMP game Init\n");
+  PianoLogInfo("TMP game Init");
 
   app.PlaceNoteOnTimeline(0, 0.0f, 1.0f);
   app.PlaceNoteOnTimeline(1, 0.5f, 1.0f);
@@ -19,34 +19,42 @@ void Init()
 
 void Update(float _delta)
 {
-  static float timer = 0;
-  const float NoteFrequency = 1.0f * 1000.0f;
+  Piano::Renderer::PlaceCamera(std::sin(Piano::time.totalTime));
 
-  // Random float between 0.5 & 2.0
-  float duration = (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * 1.5f + 0.5f;
-  u32 note = rand() % 10;
+  #ifdef PIANO_DEBUG
+  // Log the average delta time & framerate =====
+  static f32 deltasSum = 0.0f;
+  static u32 deltasCount = 0;
+  static const f32 fpsPrintFrequency = 1.0f; // Seconds
 
-  if (timer >= NoteFrequency)
+  deltasSum += _delta;
+  deltasCount++;
+
+  if (deltasSum >= fpsPrintFrequency)
   {
-    app.PlaceNoteOnTimeline(note, globalStats.realTime + 1.0f, duration);
-    timer = 0;
-  }
+    double avg = deltasSum / deltasCount;
+    PianoLogInfo("<> %8.0f ms -- %4.0f fps", avg, 1000 / avg);
 
-  timer += _delta;
+    deltasSum = 0;
+    deltasCount = 0;
+  }
+  #endif // PIANO_DEBUG
 }
 
 void Shutdown()
 {
-  printf("TMP game Shutdown\n");
+  PianoLogInfo("TMP game Shutdown");
 }
 
 int main()
 {
-  phApplicationSettings appSettings {};
+  Piano::ApplicationSettings appSettings {};
   appSettings.Initialize = Init;
   appSettings.Update = Update;
   appSettings.Shutdown = Shutdown;
-  appSettings.windowExtents = { 800, 600 };
+  appSettings.rendererSettings.windowExtents = { 800, 600 };
+  appSettings.rendererSettings.camera.keyboardLayout = Piano::Renderer::Keyboard_Full;
+  appSettings.rendererSettings.camera.previewLength = 2.0f;
 
   app.Run(&appSettings);
 

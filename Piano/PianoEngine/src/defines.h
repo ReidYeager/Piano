@@ -1,9 +1,29 @@
-#pragma once
+
+#ifndef PIANO_DEFINES_H_
+#define PIANO_DEFINES_H_
 
 #ifndef GLADINCLUDED
 #define GLADINCLUDED
 #include <glad/glad.h>
 #endif // !GLADINCLUDED
+
+#define PIANO_DEBUG 1 // Change to 0 to not use debug components
+
+//=========================
+// Platform detection
+//=========================
+
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
+#define PIANO_PLATFORM_WINDOWS 1
+#elif defined(__linux__) || defined(__gnu_linux__)
+#define PIANO_PLATFORM_LINUX 1
+#else
+#error "This platform is currently not supported"
+#endif // Platform detection
+
+//=========================
+// Types
+//=========================
 
 // Integers
 typedef signed char        i8;
@@ -23,8 +43,4 @@ typedef double             f64;
 typedef unsigned char      b8;
 typedef unsigned int       b32;
 
-// TODO : Make these dynamic?
-//#define PIANO_RESOURCE_TEXTURE_DIR "../../../PianoGame/res/textures/"
-//#define PIANO_RESOURCE_SHADER_DIR  "../../../PianoGame/res/shaders/"
-//#define PIANO_RESOURCE_MODEL_DIR   "../../../PianoGame/res/models/"
-
+#endif // !PIANO_DEFINES_H_

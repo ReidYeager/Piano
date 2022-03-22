@@ -1,8 +1,8 @@
 
 #include "defines.h"
+#include "logger.h"
 
 #include "core/piano_application.h"
-#include "core/global_stats.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -13,15 +13,12 @@
 #include <vector>
 #include <stdio.h>
 
-// =======================
-// Engine Initialization
-// =======================
+// Setup time =====
+Piano::TimeInfo Piano::time;
+std::chrono::steady_clock::time_point realtimeStart, frameStart, frameEnd;
+const float microToSecond = 0.000001f;
 
-std::vector<glm::mat4> quadTransforms;
-const u32 quadCount = 10;
-u32 quadIndex = 0;
-
-void PianoApplication::Run(phApplicationSettings* _settings)
+void Piano::Application::Run(ApplicationSettings* _settings)
 {
   try
   {
@@ -31,42 +28,69 @@ void PianoApplication::Run(phApplicationSettings* _settings)
   }
   catch (const char* e)
   {
-    printf("PianoHero bailed out with an error of : %s", e);
+    PianoLogFatal("PianoHero bailed out with an error of : %s", e);
     return;
   }
 
   glfwTerminate();
 }
 
-void PianoApplication::Initialize(phApplicationSettings* _settings)
-{
-	printf("<<< Init\n");
-	printf("<<< Platform Init\n");
-  platform.Initialize(_settings->windowExtents);
-  printf("<<< Renderer Init\n");
-  renderer.Initialize(_settings->windowExtents);
-	printf("<<< Client Init\n");
+// ==========
+// Init & Shutdown
+// ==========
 
+void Piano::Application::Initialize(ApplicationSettings* _settings)
+{
+  Piano::Platform::Initialize(_settings->rendererSettings.windowExtents);
+  Piano::Renderer::Initialize(_settings->rendererSettings);
+
+  // Initialize time =====
+  {
+    Piano::time.deltaTime = 0.0f;
+    Piano::time.totalTime = 0.0f;
+    Piano::time.frameCount = 0;
+
+    realtimeStart = std::chrono::steady_clock::now();
+    frameStart = frameEnd = realtimeStart;
+
+    Piano::time.deltaTime = 0.0f;
+  }
+
+  // Intialize Client =====
   context.ClientInitialize = _settings->Initialize;
   context.ClientUpdate = _settings->Update;
   context.ClientShutdown = _settings->Shutdown;
 
-  context.windowExtents = _settings->windowExtents;
-
-  quadTransforms.resize(quadCount);
+  context.windowExtents = _settings->rendererSettings.windowExtents;
 
   context.ClientInitialize();
 }
 
-void PianoApplication::Shutdown()
+void Piano::Application::Shutdown()
 {
   context.ClientShutdown();
 
-  renderer.Shutdown();
-  platform.Shutdown();
+  Piano::Renderer::Shutdown();
+  Piano::Platform::Shutdown();
 }
 
-void PianoApplication::HandleInput(GLFWwindow* _window)
+// ==========
+// Update
+// ==========
+
+void UpdateTime()
+{
+  frameEnd = std::chrono::steady_clock::now();
+
+  Piano::time.deltaTime = std::chrono::duration_cast<std::chrono::microseconds>(frameEnd - frameStart).count() * microToSecond;
+  Piano::time.totalTime = std::chrono::duration_cast<std::chrono::microseconds>(frameEnd - realtimeStart).count() * microToSecond;
+
+  Piano::time.frameCount++;
+
+  frameStart = frameEnd;
+}
+
+void Piano::Application::HandleInput(GLFWwindow* _window)
 {
   if (glfwGetKey(_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     glfwSetWindowShouldClose(_window, true);
@@ -74,106 +98,49 @@ void PianoApplication::HandleInput(GLFWwindow* _window)
   // TODO : Update the status of all applicable keys (keyboard & piano)
 }
 
-void PianoApplication::MainLoop()
+void Piano::Application::MainLoop()
 {
-	printf("-------------- Entered main loop\n");
-  auto start = std::chrono::steady_clock::now();
-  auto end = std::chrono::steady_clock::now();
-  auto deltaTime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-
-  f32 deltasSum = 0.0f;
-  u32 deltasCount = 0;
-  f32 fpsPrintFrequency = 1.0f * 1000.0f; // Milliseconds
-
-  // TMP
-  glm::mat4 mvp;
-  u32 frameCount = 0;
-
-  while (!platform.ShouldClose())
+  while (!Piano::Platform::ShouldClose())
   {
-	printf(">>>> Frame %u\n", frameCount++);
     // Frame initializtation =====
     {
-      start = end;
-      HandleInput(platform.GetWindow());
+      HandleInput(Piano::Platform::GetWindow());
     }
 
     // Client loop =====
     {
-      Update();
-      context.ClientUpdate(globalStats.deltaTime);
+      context.ClientUpdate(Piano::time.deltaTime);
     }
 
     // Rendering =====
     {
-      renderer.RenderFrame(quadTransforms);
+      Piano::Renderer::RenderFrame();
 
-      glfwSwapBuffers(platform.GetWindow());
+      glfwSwapBuffers(Piano::Platform::GetWindow());
       glfwPollEvents();
     }
 
-    // Calculate times =====
-    {
-      end = std::chrono::steady_clock::now();
-      deltaTime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-
-      globalStats.deltaTime = deltaTime.count() * 0.001f; // uSec -> mSec
-      globalStats.realTime += globalStats.deltaTime * 0.001f; // mSec -> Sec
-
-      deltasSum += globalStats.deltaTime;
-      deltasCount++;
-
-      if (deltasSum >= fpsPrintFrequency)
-      {
-        double avg = deltasSum / deltasCount;
-        printf(" %8.0f ms -- %4.0f fps\n", avg, 1000 / avg);
-
-        deltasSum = 0;
-        deltasCount = 0;
-      }
-    }
+    UpdateTime();
   }
 }
 
-// =======================
+// ==========
 // Functionality
-// =======================
+// ==========
 
-std::vector<glm::mat4> noteWorldTransforms;
-
-void PianoApplication::Update()
-{
-  u32 i = 0;
-
-  printf("%f\t\t", globalStats.deltaTime);
-
-  // Update quad transforms ===== NOT ONLY FOR NOTES
-  for (auto& mvp : quadTransforms)
-  {
-    // Directly modify the quad's Y position
-    // Can't use glm::translate because it is affected by the quad's scale
-    mvp[3][1] -= globalStats.deltaTime * 0.001f;
-
-    printf("%d:%f -- ", i++, mvp[3][1]);
-  }
-  printf("\n");
-}
-
-void PianoApplication::PlaceNoteOnTimeline(u32 _note, f32 _startTime, f32 _duration)
+void Piano::Application::PlaceNoteOnTimeline(u32 _note, f32 _startTime, f32 _duration)
 {
   // Calculate note's world position =====
   f32 worldX = ((_note * 80.0f) - context.windowExtents.width * 0.45f) / (context.windowExtents.width * 0.5f);
   f32 worldY = _startTime;
 
   // Place and scale the note =====
-  glm::mat4& mvp = quadTransforms[quadIndex];
-  mvp = glm::translate(glm::mat4(1), glm::vec3(worldX, worldY, 0.0f));
-  mvp = glm::scale(mvp, glm::vec3(0.1f, _duration, 1.0f));
+  PianoLogWarning("Need to write note placement code");
 
-  quadIndex = (quadIndex + 1) % quadCount;
+  //quadIndex = (quadIndex + 1) % quadCount;
 }
 
-UiElement PianoApplication::AddUiElement(vec2 _position, vec2 _scale /*= {1, 1}*/)
+UiElement Piano::Application::AddUiElement(vec2 _position, vec2 _scale /*= {1, 1}*/)
 {
   // Calculate clip-space position
 

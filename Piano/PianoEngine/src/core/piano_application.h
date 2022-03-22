@@ -11,47 +11,65 @@
 
 #include <GLFW/glfw3.h>
 
-struct phApplicationSettings
-{
-  void(*Initialize)();
-  void(*Update)(float);
-  void(*Shutdown)();
+namespace Piano {
 
-  vec2 windowExtents;
-};
+  //=========================
+  // Time
+  //=========================
 
-// Defines API function calls
-class PianoApplication
-{
-private:
-  struct
+  extern struct TimeInfo
   {
-    void(*ClientInitialize)();
-    void(*ClientUpdate)(float);
-    void(*ClientShutdown)();
+    f32 totalTime; // Real-time in seconds since the application started
 
-    vec2 windowExtents;
-  } context;
+    f32 deltaTime; // Time in seconds taken by the previous tick
 
-private:
-  // Initializes the engine's components
-  void Initialize(phApplicationSettings* _settings);
-  // Handles everything that occurs every frame
-  void MainLoop();
-  // Destroys the engine's components
-  void Shutdown();
-  // Updates the input state
-  void HandleInput(GLFWwindow* _window);
+    u32 frameCount; // Number of frames rendered before this tick
+  } time;
 
-  // Handles some game back-end data
-  void Update();
+  //=========================
+  // Application
+  //=========================
 
-public:
-  void Run(phApplicationSettings* _settings);
+  struct ApplicationSettings
+  {
+    void(*Initialize)();
+    void(*Update)(float);
+    void(*Shutdown)();
 
-  void PlaceNoteOnTimeline(u32 _note, f32 _startTime, f32 _duration);
-  UiElement AddUiElement(vec2 _position, vec2 _scale = {1, 1});
+    Piano::Renderer::RendererSettings rendererSettings;
+  };
 
-};
+  // Defines API function calls
+  class Application
+  {
+  private:
+    struct
+    {
+      void(*ClientInitialize)();
+      void(*ClientUpdate)(float);
+      void(*ClientShutdown)();
+
+      vec2 windowExtents;
+    } context;
+
+  private:
+    // Initializes the engine's components
+    void Initialize(Piano::ApplicationSettings* _settings);
+    // Handles everything that occurs every frame
+    void MainLoop();
+    // Destroys the engine's components
+    void Shutdown();
+    // Updates the input state
+    void HandleInput(GLFWwindow* _window);
+
+  public:
+    void Run(ApplicationSettings* _settings);
+
+    void PlaceNoteOnTimeline(u32 _note, f32 _startTime, f32 _duration);
+    UiElement AddUiElement(vec2 _position, vec2 _scale = {1, 1});
+
+  };
+
+}
 
 #endif // !PIANO_H_

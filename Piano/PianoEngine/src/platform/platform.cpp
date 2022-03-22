@@ -6,53 +6,109 @@
 
 #include <GLFW/glfw3.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-// TODO : ~!!~ Logger
+//=========================
+// Memory
+//=========================
 
-Platform platform;
-
-GLFWwindow* Platform::Initialize(vec2 _windowExtents)
+void* Piano::MemoryAllocate(u64 _size)
 {
-  // Initialize GLFW
-  window = InitializeWindow(_windowExtents.width, _windowExtents.height);
-  return window;
+  return malloc(_size);
 }
 
-void Platform::Shutdown()
+void Piano::MemorySet(void* _data, u64 _size, u32 _value)
 {
-  glfwDestroyWindow(window);
+  memset(_data, _value, _size);
 }
 
-b8 Platform::ShouldClose()
+void Piano::MemoryCopy(void* _source, void* _destination, u64 _size)
 {
-  return glfwWindowShouldClose(window);
+  memcpy(_destination, _source, _size);
 }
 
-GLFWwindow* Platform::InitializeWindow(u32 _width, u32 _height)
+void Piano::MemoryFree(void* _data)
+{
+  free(_data);
+}
+
+//=========================
+// Platform
+//=========================
+
+GLFWwindow* window = nullptr;
+
+void InitializeWindow(u32 _width, u32 _height)
 {
   if (!glfwInit())
   {
-  	printf("Failed to init GLFW\n");
-  	throw(-1);
+    printf("Failed to init GLFW\n");
+    throw(-1);
   }
-  
+
   //glGetString(GL_VERSION);
-  
+
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
   glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
   //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_ANY_PROFILE);
   //glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-  GLFWwindow* w = glfwCreateWindow(_width, _height, "PianoHero", nullptr, nullptr);
-  if (w == nullptr)
+  window = glfwCreateWindow(_width, _height, "PianoHero", nullptr, nullptr);
+  if (window == nullptr)
   {
     printf("Failed to open glfw window\n");
     glfwTerminate();
     throw(-1);
   }
 
-  glfwMakeContextCurrent(w);
-
-  return w;
+  glfwMakeContextCurrent(window);
 }
+
+void Piano::Platform::Initialize(vec2 _windowExtents)
+{
+  // Initialize GLFW
+  InitializeWindow(_windowExtents.width, _windowExtents.height);
+}
+
+void Piano::Platform::Shutdown()
+{
+  glfwDestroyWindow(window);
+}
+
+b8 Piano::Platform::ShouldClose()
+{
+  return glfwWindowShouldClose(window);
+}
+
+GLFWwindow* Piano::Platform::GetWindow()
+{
+  return window;
+}
+
+#if PIANO_PLATFORM_LINUX
+void Piano::Platform::PrintToConsole(const char* _message, u32 _color)
+{
+  //                               INFO,  DEBUG,   WARN,  ERROR,  FATAL
+  const char* colorStrings[] = { "1;37", "1;34", "1;33", "1;31", "1;41" };
+  printf("\033[%sm%s\033[0m", colorStrings[_color], _message);
+}
+#elif PIANO_PLATFORM_WINDOWS
+#include <windows.h>
+
+void Piano::Platform::PrintToConsole(const char* _message, u32 _color)
+{
+  //               Info , Debug, Warning, Error , Fatal
+  //               White, Cyan , Yellow , Red   , White-on-Red
+  u32 colors[] = { 0xf  , 0xb  , 0xe    , 0x4   , 0xcf };
+
+  HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
+  SetConsoleTextAttribute(console, colors[_color]);
+  OutputDebugStringA(_message);
+  u64 length = strlen(_message);
+  LPDWORD written = 0;
+  WriteConsoleA(console, _message, (DWORD)length, written, 0);
+  SetConsoleTextAttribute(console, 0xf);
+}
+#endif
