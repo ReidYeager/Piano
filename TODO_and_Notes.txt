@@ -1,6 +1,0 @@
-\Piano\PianoEngine\src\core\piano_application.cpp
-	Line    68 :--: // TODO : Update the status of all applicable keys (keyboard & piano)
-\Piano\PianoEngine\src\defines.h
-	Line    25 :--: // TODO : Make these dynamic?
-\Piano\PianoEngine\src\platform\platform.cpp
-	Line     9 :--: // TODO : ~!!~ Logger

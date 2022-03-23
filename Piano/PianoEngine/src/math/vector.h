@@ -79,10 +79,10 @@ typedef struct vec3
 
 typedef struct vec4
 {
-  union { f32 x, r; };
-  union { f32 y, g; };
-  union { f32 z, b; };
-  union { f32 w, a; };
+  union { f32 x, r, keyPosition; };
+  union { f32 y, g, startTime; };
+  union { f32 z, b, keyWidth; };
+  union { f32 w, a, duration; };
 
   f32& operator[](int i)
   {

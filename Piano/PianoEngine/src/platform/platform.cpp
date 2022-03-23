@@ -1,5 +1,6 @@
 
 #include "defines.h"
+#include "logger.h"
 
 #include "platform/platform.h"
 #include "math/vector.h"
@@ -39,15 +40,13 @@ void Piano::MemoryFree(void* _data)
 
 GLFWwindow* window = nullptr;
 
-void InitializeWindow(u32 _width, u32 _height)
+b8 InitializeWindow(u32 _width, u32 _height)
 {
   if (!glfwInit())
   {
-    printf("Failed to init GLFW\n");
-    throw(-1);
+    PianoLogFatal("Failed to init GLFW");
+    return false;
   }
-
-  //glGetString(GL_VERSION);
 
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
@@ -58,23 +57,26 @@ void InitializeWindow(u32 _width, u32 _height)
   window = glfwCreateWindow(_width, _height, "PianoHero", nullptr, nullptr);
   if (window == nullptr)
   {
-    printf("Failed to open glfw window\n");
+    PianoLogFatal("Failed to open glfw window");
     glfwTerminate();
-    throw(-1);
+    return false;
   }
 
   glfwMakeContextCurrent(window);
+
+  return true;
 }
 
-void Piano::Platform::Initialize(vec2 _windowExtents)
+b8 Piano::Platform::Initialize(vec2I _windowExtents)
 {
-  // Initialize GLFW
-  InitializeWindow(_windowExtents.width, _windowExtents.height);
+  return InitializeWindow(_windowExtents.width, _windowExtents.height);
 }
 
-void Piano::Platform::Shutdown()
+b8 Piano::Platform::Shutdown()
 {
   glfwDestroyWindow(window);
+
+  return true;
 }
 
 b8 Piano::Platform::ShouldClose()

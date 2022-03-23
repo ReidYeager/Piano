@@ -8,6 +8,8 @@
 
 #include "math/vector.h"
 
+#include <vector>
+
 namespace Piano {
   struct Material
   {
@@ -23,21 +25,23 @@ namespace Piano {
   namespace Renderer {
     struct RendererSettings
     {
-      vec2 windowExtents;
-
-      Piano::Renderer::CameraSettings camera;
+      vec2I windowExtents;                // Pixel width and height of the window
+      KeyboardLayoutTypes keyboardLayout; // Used to determine the required projection width
+      f32 previewDuration;                // Number of seconds to preview
     };
 
     // Initializes OpenGL and creates a surface and swapchain
-    void Initialize(Piano::Renderer::RendererSettings _settings);
-    void RenderFrame();
-    void Shutdown();
+    b8 Initialize(Piano::Renderer::RendererSettings _settings);
+    b8 RenderFrame();
+    b8 Shutdown();
 
     // Functionality =====
     // Changes the camera's projection of the roll
-    void RecalibrateCamera(Piano::Renderer::CameraSettings _settings);
+    void ChangeCameraSettings(KeyboardLayoutTypes _layout, f32 _previewDuration);
     // Places the camera at the given time on the roll
     void PlaceCamera(f32 _time);
+    // Define the notes to be rendered
+    void SetNotes(const std::vector<Piano::note>& _notes);
 } }
 
 #endif //!PIANO_RENDERER_RENDERER_H_

@@ -16,8 +16,11 @@
 const glm::mat4 identityMatrix = glm::mat4(1.0f);
 
 Piano::Material noteMaterial;
+Piano::Material textMaterial;
 glm::mat4 projectionMatrix;
 glm::mat4 viewProjectionMatrix = glm::mat4(1.0f);
+
+std::vector<Piano::note> noteTransforms;
 
 //=========================
 // Init & Shutdown
@@ -37,7 +40,7 @@ u32 LoadShader(const char* _filename, GLenum _stage)
   }
 
   char* c = code.data();
-  int size = code.size();
+  i32 size = (i32)code.size();
 
   u32 shader = glCreateShader(_stage);
   glShaderSource(shader, 1, reinterpret_cast<GLchar**>(&c), (GLint*)&size);
@@ -54,43 +57,42 @@ u32 LoadShader(const char* _filename, GLenum _stage)
   return shader;
 }
 
-void CreateShader(const char* _vert, const char* _frag)
+b8 CreateMaterial(const char* _vert, const char* _frag, Piano::Material* _material)
 {
-  noteMaterial = {};
   u32 vs, fs;
 
   // Create shader stages =====
   vs = LoadShader(_vert, GL_VERTEX_SHADER);
   fs = LoadShader(_frag, GL_FRAGMENT_SHADER);
 
-  noteMaterial.vertFile = _vert;
-  noteMaterial.fragFile = _frag;
+  _material->vertFile = _vert;
+  _material->fragFile = _frag;
 
   // Setup shader program =====
-  noteMaterial.shaderProgram = glCreateProgram();
-  glAttachShader(noteMaterial.shaderProgram, vs);
-  glAttachShader(noteMaterial.shaderProgram, fs);
-  glLinkProgram(noteMaterial.shaderProgram);
+  _material->shaderProgram = glCreateProgram();
+  glAttachShader(_material->shaderProgram, vs);
+  glAttachShader(_material->shaderProgram, fs);
+  glLinkProgram(_material->shaderProgram);
 
   int success;
   char infoLog[512];
-  glGetProgramiv(noteMaterial.shaderProgram, GL_LINK_STATUS, &success);
+  glGetProgramiv(_material->shaderProgram, GL_LINK_STATUS, &success);
   if (!success)
   {
-    glGetProgramInfoLog(noteMaterial.shaderProgram, 512, NULL, infoLog);
+    glGetProgramInfoLog(_material->shaderProgram, 512, NULL, infoLog);
     PianoLogFatal("Program linking failed\n%s\n", infoLog);
-    throw(-1);
+    return false;
   }
 
   glDeleteShader(vs);
   glDeleteShader(fs);
 
   // Bind vertex info =====
-  glGenBuffers(1, &noteMaterial.vbo);
-  glGenBuffers(1, &noteMaterial.ebo);
-  glGenVertexArrays(1, &noteMaterial.vao);
+  glGenBuffers(1, &_material->vbo);
+  glGenBuffers(1, &_material->ebo);
+  glGenVertexArrays(1, &_material->vao);
 
-  glBindVertexArray(noteMaterial.vao);
+  glBindVertexArray(_material->vao);
 
   const vec3 vertices[4] = {
     { 1.0f, 1.0f, 0.0f}, // TR
@@ -104,88 +106,131 @@ void CreateShader(const char* _vert, const char* _frag)
       1, 2, 3
   };
 
-  glBindBuffer(GL_ARRAY_BUFFER, noteMaterial.vbo);
+  glBindBuffer(GL_ARRAY_BUFFER, _material->vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, noteMaterial.ebo);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _material->ebo);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
+
+  return true;
 }
 
-void Piano::Renderer::Initialize(Piano::Renderer::RendererSettings _settings)
+b8 Piano::Renderer::Initialize(Piano::Renderer::RendererSettings _settings)
 {
   // Initialize GLAD / OpenGL =====
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
   {
-    printf("Failed to initialize GLAD\n");
-    throw(-1);
+    PianoLogFatal("Failed to initialize GLAD\n");
+    return false;
   }
 
-  // Create swapchain
   glViewport(0, 0, _settings.windowExtents.x, _settings.windowExtents.y);
+  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
-  RecalibrateCamera(_settings.camera);
+  if (!CreateMaterial("note.vert", "note.frag", &noteMaterial))
+  {
+    PianoLogFatal("Failed to create note material");
+    return false;
+  }
+
+  if (!CreateMaterial("text.vert", "text.frag", &textMaterial))
+  {
+    PianoLogFatal("Failed to create text material");
+    return false;
+  }
+
+  // Initialize camera =====
+  ChangeCameraSettings(_settings.keyboardLayout, _settings.previewDuration);
   PlaceCamera(0.0f);
 
-  // Create the note shader
-  CreateShader("base.vert", "base.frag");
+  return true;
 }
 
-void Piano::Renderer::Shutdown()
+b8 Piano::Renderer::Shutdown()
 {
-  
+  glDeleteVertexArrays(1, &noteMaterial.vao);
+  glDeleteBuffers(1, &noteMaterial.vbo);
+  glDeleteBuffers(1, &noteMaterial.ebo);
+  glDeleteShader(noteMaterial.shaderProgram);
+
+  glDeleteVertexArrays(1, &textMaterial.vao);
+  glDeleteBuffers(1, &textMaterial.vbo);
+  glDeleteBuffers(1, &textMaterial.ebo);
+  glDeleteShader(textMaterial.shaderProgram);
+
+  return true;
 }
 
 //=========================
 // Update
 //=========================
 
-void Piano::Renderer::RenderFrame()
+b8 Piano::Renderer::RenderFrame()
 {
-  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
 
-  glUseProgram(noteMaterial.shaderProgram);
-  u32 noteTransformID = glGetUniformLocation(noteMaterial.shaderProgram, "worldspaceTransform");
-  u32 viewID = glGetUniformLocation(noteMaterial.shaderProgram, "viewMatrix");
-
-  glUniformMatrix4fv(noteTransformID, 1, GL_FALSE, glm::value_ptr(identityMatrix));
-  glUniformMatrix4fv(viewID, 1, GL_FALSE, glm::value_ptr(viewProjectionMatrix));
-
-  // For each note =====
+  // Render notes =====
   {
-    // Use the note's transform
-    //glUniformMatrix4fv(matid, 1, GL_FALSE, glm::value_ptr(transform));
+    glUseProgram(noteMaterial.shaderProgram);
+    u32 noteTransformVectorID = glGetUniformLocation(noteMaterial.shaderProgram, "transformValues");
+    u32 viewID = glGetUniformLocation(noteMaterial.shaderProgram, "viewMatrix");
 
-    // Render one note quad =====
-    glBindVertexArray(noteMaterial.vao);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    glBindVertexArray(0);
+    glUniformMatrix4fv(viewID, 1, GL_FALSE, glm::value_ptr(viewProjectionMatrix));
+
+    for (const auto& noteValue : noteTransforms)
+    {
+      glUniform4fv(noteTransformVectorID, 1, (float*)&noteValue);
+
+      // Render one note quad =====
+      glBindVertexArray(noteMaterial.vao);
+      glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+      glBindVertexArray(0);
+    }
   }
+
+  // Render text =====
+  {
+    // TODO : Text rendering
+  }
+
+  return true;
 }
 
 //=========================
 // Functionality
 //=========================
 
-void Piano::Renderer::RecalibrateCamera(CameraSettings _settings)
+void Piano::Renderer::ChangeCameraSettings(Piano::Renderer::KeyboardLayoutTypes _layout,
+                                           f32 _previewDuration)
 {
   // TODO : Properly calculate the camera width calibration value (currently using random values)
 
   f32 right = 0.0f;
-  switch (_settings.keyboardLayout)
+  switch (_layout)
   {
   case Keyboard_Full: right = 2.0f; break;
   case Keyboard_Half: right = 1.0f; break;
   }
 
-  projectionMatrix = glm::ortho(0.0f, right, 0.0f, _settings.previewLength);
+  projectionMatrix = glm::ortho(0.0f, right, 0.0f, _previewDuration);
 }
 
 void Piano::Renderer::PlaceCamera(f32 _time)
 {
-  glm::mat4 view = glm::translate(identityMatrix, glm::vec3(0.0f, _time, -0.5f));
-  viewProjectionMatrix = view * projectionMatrix;
+  glm::mat4 view = identityMatrix;
+  view[3][1] = -_time;
+  viewProjectionMatrix = projectionMatrix * view;
+}
+
+void Piano::Renderer::SetNotes(const std::vector<Piano::note>& _notes)
+{
+  noteTransforms.clear();
+  noteTransforms.reserve(_notes.size());
+  for (auto& n : _notes)
+  {
+    noteTransforms.push_back(n);
+  }
 }

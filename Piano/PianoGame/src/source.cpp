@@ -8,18 +8,25 @@
 
 Piano::Application app;
 
-// Return false if a fatal error occurs
-void Init()
+// Returns false if a fatal error occurs
+b8 Init()
 {
-  PianoLogInfo("TMP game Init");
+  // Place test notes
+  for (u32 i = 0; i < 300; i++)
+  {
+    app.PlaceNoteOnTimeline(i % 2, i, 1.0f);
+  }
+  app.PushNotesTimelineToRenderer();
 
-  app.PlaceNoteOnTimeline(0, 0.0f, 1.0f);
-  app.PlaceNoteOnTimeline(1, 0.5f, 1.0f);
+  return true;
 }
 
-void Update(float _delta)
+// Returns false if a fatal error occurs
+b8 Update(float _delta)
 {
-  Piano::Renderer::PlaceCamera(std::sin(Piano::time.totalTime));
+  // Move the camera up the timeline
+  //  Should probably change this to a boolean flag in application
+  Piano::Renderer::PlaceCamera(Piano::time.totalTime);
 
   #ifdef PIANO_DEBUG
   // Log the average delta time & framerate =====
@@ -33,28 +40,31 @@ void Update(float _delta)
   if (deltasSum >= fpsPrintFrequency)
   {
     double avg = deltasSum / deltasCount;
-    PianoLogInfo("<> %8.0f ms -- %4.0f fps", avg, 1000 / avg);
+    PianoLogInfo("<> %4.3f ms -- %4.0f fps", avg * 1000, 1 / avg);
 
     deltasSum = 0;
     deltasCount = 0;
   }
   #endif // PIANO_DEBUG
+
+  return true;
 }
 
-void Shutdown()
+// Returns false if a fatal error occurs
+b8 Shutdown()
 {
-  PianoLogInfo("TMP game Shutdown");
+  return true;
 }
 
 int main()
 {
   Piano::ApplicationSettings appSettings {};
-  appSettings.Initialize = Init;
-  appSettings.Update = Update;
-  appSettings.Shutdown = Shutdown;
+  appSettings.InitFunction = Init;
+  appSettings.UpdateFunction = Update;
+  appSettings.ShutdownFunction = Shutdown;
   appSettings.rendererSettings.windowExtents = { 800, 600 };
-  appSettings.rendererSettings.camera.keyboardLayout = Piano::Renderer::Keyboard_Full;
-  appSettings.rendererSettings.camera.previewLength = 2.0f;
+  appSettings.rendererSettings.keyboardLayout = Piano::Renderer::Keyboard_Full;
+  appSettings.rendererSettings.previewDuration = 3.0f;
 
   app.Run(&appSettings);
 

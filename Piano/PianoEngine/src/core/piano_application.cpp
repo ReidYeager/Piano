@@ -22,27 +22,41 @@ void Piano::Application::Run(ApplicationSettings* _settings)
 {
   try
   {
-    Initialize(_settings);
-    MainLoop();
-    Shutdown();
+    if (!Initialize(_settings))
+      throw("Engine initialization failed");
+
+    if (!MainLoop())
+      throw("Engine main loop failed");
+
+    if (!Shutdown())
+      throw("Engine shutdown failed");
   }
   catch (const char* e)
   {
-    PianoLogFatal("PianoHero bailed out with an error of : %s", e);
+    PianoLogFatal("Piano application failed\n >> % s", e);
     return;
   }
 
   glfwTerminate();
 }
 
-// ==========
+//=========================
 // Init & Shutdown
-// ==========
+//=========================
 
-void Piano::Application::Initialize(ApplicationSettings* _settings)
+b8 Piano::Application::Initialize(ApplicationSettings* _settings)
 {
-  Piano::Platform::Initialize(_settings->rendererSettings.windowExtents);
-  Piano::Renderer::Initialize(_settings->rendererSettings);
+  if (!Piano::Platform::Initialize(_settings->rendererSettings.windowExtents))
+  {
+    PianoLogFatal("Platform initialization failed");
+    return false;
+  }
+
+  if (!Piano::Renderer::Initialize(_settings->rendererSettings))
+  {
+    PianoLogFatal("Renderer initialization failed");
+    return false;
+  }
 
   // Initialize time =====
   {
@@ -57,26 +71,44 @@ void Piano::Application::Initialize(ApplicationSettings* _settings)
   }
 
   // Intialize Client =====
-  context.ClientInitialize = _settings->Initialize;
-  context.ClientUpdate = _settings->Update;
-  context.ClientShutdown = _settings->Shutdown;
+  context.ClientUpdate = _settings->UpdateFunction;
+  context.ClientShutdown = _settings->ShutdownFunction;
 
-  context.windowExtents = _settings->rendererSettings.windowExtents;
+  if (!_settings->InitFunction())
+  {
+    PianoLogFatal("Game failed to initialize");
+    return false;
+  }
 
-  context.ClientInitialize();
+  return true;
 }
 
-void Piano::Application::Shutdown()
+b8 Piano::Application::Shutdown()
 {
-  context.ClientShutdown();
+  if (!context.ClientShutdown())
+  {
+    PianoLogFatal("Game failed to shutdown properly");
+    return false;
+  }
 
-  Piano::Renderer::Shutdown();
-  Piano::Platform::Shutdown();
+  if (!Piano::Renderer::Shutdown())
+  {
+    PianoLogFatal("Renderer failed to shutdown properly");
+    return false;
+  }
+
+  if (!Piano::Platform::Shutdown())
+  {
+    PianoLogFatal("Platform failed to shutdown properly");
+    return false;
+  }
+
+  return true;
 }
 
-// ==========
+//=========================
 // Update
-// ==========
+//=========================
 
 void UpdateTime()
 {
@@ -98,7 +130,10 @@ void Piano::Application::HandleInput(GLFWwindow* _window)
   // TODO : Update the status of all applicable keys (keyboard & piano)
 }
 
-void Piano::Application::MainLoop()
+#include <math.h>
+std::vector<Piano::note> notes;
+
+b8 Piano::Application::MainLoop()
 {
   while (!Piano::Platform::ShouldClose())
   {
@@ -114,7 +149,11 @@ void Piano::Application::MainLoop()
 
     // Rendering =====
     {
-      Piano::Renderer::RenderFrame();
+      if (!Piano::Renderer::RenderFrame())
+      {
+        PianoLogFatal("Rendering failed");
+        return false;
+      }
 
       glfwSwapBuffers(Piano::Platform::GetWindow());
       glfwPollEvents();
@@ -122,27 +161,55 @@ void Piano::Application::MainLoop()
 
     UpdateTime();
   }
+
+  return true;
 }
 
-// ==========
+//=========================
 // Functionality
-// ==========
+//=========================
+
+void DetermineKeyXValues(int _key, Piano::note* _note)
+{
+  // Determine if the key is black (and thus slimmer)
+  if (_key % 2)
+    _note->keyWidth = 0.5f;
+  else
+    _note->keyWidth = 1.0f;
+
+  // Do some fancy positioning calculation
+  _note->keyPosition = (f32)_key;
+}
 
 void Piano::Application::PlaceNoteOnTimeline(u32 _note, f32 _startTime, f32 _duration)
 {
-  // Calculate note's world position =====
-  f32 worldX = ((_note * 80.0f) - context.windowExtents.width * 0.45f) / (context.windowExtents.width * 0.5f);
-  f32 worldY = _startTime;
-
   // Place and scale the note =====
-  PianoLogWarning("Need to write note placement code");
+  Piano::note newNote;
 
-  //quadIndex = (quadIndex + 1) % quadCount;
+  DetermineKeyXValues(_note, &newNote);
+  newNote.startTime = _startTime;
+  newNote.duration = _duration;
+
+  notes.push_back(newNote);
+}
+
+
+void Piano::Application::PushNotesTimelineToRenderer()
+{
+  Piano::Renderer::SetNotes(notes);
+}
+
+
+void Piano::Application::ClearNotesTimeline()
+{
+  notes.clear();
+  PushNotesTimelineToRenderer();
 }
 
 UiElement Piano::Application::AddUiElement(vec2 _position, vec2 _scale /*= {1, 1}*/)
 {
   // Calculate clip-space position
+  PianoLogWarning("Need to implement UI placement");
 
   return {};
 }

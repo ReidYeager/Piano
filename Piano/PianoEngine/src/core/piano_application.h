@@ -32,9 +32,9 @@ namespace Piano {
 
   struct ApplicationSettings
   {
-    void(*Initialize)();
-    void(*Update)(float);
-    void(*Shutdown)();
+    b8(*InitFunction)();
+    b8(*UpdateFunction)(float);
+    b8(*ShutdownFunction)();
 
     Piano::Renderer::RendererSettings rendererSettings;
   };
@@ -45,20 +45,18 @@ namespace Piano {
   private:
     struct
     {
-      void(*ClientInitialize)();
-      void(*ClientUpdate)(float);
-      void(*ClientShutdown)();
-
-      vec2 windowExtents;
+      b8(*ClientInitialize)();
+      b8(*ClientUpdate)(float);
+      b8(*ClientShutdown)();
     } context;
 
   private:
     // Initializes the engine's components
-    void Initialize(Piano::ApplicationSettings* _settings);
+    b8 Initialize(Piano::ApplicationSettings* _settings);
     // Handles everything that occurs every frame
-    void MainLoop();
+    b8 MainLoop();
     // Destroys the engine's components
-    void Shutdown();
+    b8 Shutdown();
     // Updates the input state
     void HandleInput(GLFWwindow* _window);
 
@@ -66,6 +64,8 @@ namespace Piano {
     void Run(ApplicationSettings* _settings);
 
     void PlaceNoteOnTimeline(u32 _note, f32 _startTime, f32 _duration);
+    void PushNotesTimelineToRenderer();
+    void ClearNotesTimeline();
     UiElement AddUiElement(vec2 _position, vec2 _scale = {1, 1});
 
   };
