@@ -10,6 +10,7 @@
 
 #include <glm/glm.hpp>
 
+#include <string>
 #include <vector>
 
 namespace Piano {
@@ -22,6 +23,14 @@ namespace Piano {
     const char* vertFile;
     const char* fragFile;
     u32 shaderProgram;
+  };
+
+  struct TextGlyph
+  {
+    u32 textureID;  // ID handle of the glyph texture
+    glm::ivec2   size;       // Size of glyph
+    glm::ivec2   bearing;    // Offset from baseline to left/top of glyph
+    u32 advance;    // Offset to advance to next glyph
   };
 
   namespace Renderer {
@@ -44,6 +53,12 @@ namespace Piano {
     void PlaceCamera(f32 _time);
     // Define the notes to be rendered
     void SetNotes(const std::vector<Piano::note>& _notes);
+    void AddText(const std::string& _text,
+                 vec2 _startPosition,
+                 vec3 _color = {1.0f, 1.0f, 1.0f},
+                 f32 _scale = 1.0f,
+                 b8 _printToWorldspace = false);
+    void ClearText(b8 _clearWorldText);
 } }
 
 #endif //!PIANO_RENDERER_RENDERER_H_

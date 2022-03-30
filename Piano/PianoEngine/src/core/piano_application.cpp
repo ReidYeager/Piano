@@ -206,10 +206,41 @@ void Piano::Application::ClearNotesTimeline()
   PushNotesTimelineToRenderer();
 }
 
-UiElement Piano::Application::AddUiElement(vec2 _position, vec2 _scale /*= {1, 1}*/)
+void Piano::Application::PrintToScreen(TextPrintSettings _settings, const char* _text, ...)
 {
-  // Calculate clip-space position
-  PianoLogWarning("Need to implement UI placement %d", 1);
+  // Limit 65,535 characters per message
+  const u16 length = 0xFFFF;
+  char* outMessage = new char[length];
+  Piano::MemoryZero(outMessage, length);
 
-  return {};
+  va_list args;
+  va_start(args, _text);
+  vsnprintf(outMessage, length, _text, args);
+  va_end(args);
+
+  Piano::Renderer::AddText(outMessage,
+                           _settings.startPosition,
+                           _settings.color,
+                           _settings.scale,
+                           false);
 }
+
+void Piano::Application::PrintToWorld(TextPrintSettings _settings, const char* _text, ...)
+{
+  // Limit 65,535 characters per message
+  const u16 length = 0xFFFF;
+  char* outMessage = new char[length];
+  Piano::MemoryZero(outMessage, length);
+
+  va_list args;
+  va_start(args, _text);
+  vsnprintf(outMessage, length, _text, args);
+  va_end(args);
+
+  Piano::Renderer::AddText(outMessage,
+                           _settings.startPosition,
+                           _settings.color,
+                           _settings.scale,
+                           true);
+}
+

@@ -18,6 +18,17 @@ b8 Init()
   }
   app.PushNotesTimelineToRenderer();
 
+  app.PrintToScreen({}, "This is some test text with %d", 1221);
+  app.PrintToWorld({{25.0f, 3.0f}}, "Text in the world %f", 99.012f);
+
+  Piano::TextPrintSettings printSettings {};
+  printSettings.color = { 0.8f, 0.1f, 0.8f };
+  printSettings.startPosition = { 250.0f, 500.0f };
+  app.PrintToScreen(printSettings, "Wow even text over here. %c", '!');
+  printSettings.color = { 0.1f, 0.75f, 0.15f };
+  printSettings.startPosition = { 2.0f, 8.0f };
+  app.PrintToWorld(printSettings, "AAAAAAAA %s", "AA");
+
   return true;
 }
 
@@ -25,8 +36,16 @@ b8 Init()
 b8 Update(float _delta)
 {
   // Move the camera up the timeline
-  //  Should probably change this to a boolean flag in application
   Piano::Renderer::PlaceCamera(Piano::time.totalTime);
+
+  static b8 tmpShouldClearFlag = true;
+  if (tmpShouldClearFlag && Piano::time.totalTime > 5.0f)
+  {
+    tmpShouldClearFlag = false;
+    app.ClearScreenText();
+    app.ClearWorldText();
+    app.PrintToScreen({}, "Text cleared from screen and world");
+  }
 
   #ifdef PIANO_DEBUG
   // Log the average delta time & framerate =====
@@ -64,7 +83,7 @@ int main()
   appSettings.ShutdownFunction = Shutdown;
   appSettings.rendererSettings.windowExtents = { 800, 600 };
   appSettings.rendererSettings.keyboardViewWidth = 63.0f;
-  appSettings.rendererSettings.previewDuration = 63.0f;
+  appSettings.rendererSettings.previewDuration = 5.0f;
 
   app.Run(&appSettings);
 

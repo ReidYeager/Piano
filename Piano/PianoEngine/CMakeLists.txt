@@ -8,6 +8,7 @@ cmake_minimum_required (VERSION 3.8)
 #set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 add_subdirectory(glfw_repo)
+add_subdirectory(freetype-2.11.1)
 
 find_package(OpenGL REQUIRED)
 
@@ -29,6 +30,7 @@ add_library (PianoEngine STATIC
 target_include_directories(PianoEngine PRIVATE
  ./src
  ${CMAKE_SOURCE_DIR}/libraries/include
+ ${CMAKE_SOURCE_DIR}/PianoEngine/freetype-2.11.1/include
 )
 
 target_link_directories (PianoEngine PRIVATE
@@ -38,6 +40,7 @@ target_link_directories (PianoEngine PRIVATE
 
 target_link_libraries(PianoEngine
  glfw
+ freetype
  OpenGL::GL
 )
 

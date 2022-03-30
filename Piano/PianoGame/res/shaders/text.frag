@@ -2,9 +2,15 @@
 #version 300 es
 precision mediump float;
 
-out vec4 FragColor;
+in vec2 inTexCoords;
+uniform sampler2D inTextAtlas;
+uniform vec3 inTextColor;
+
+out vec4 outFragColor;
 
 void main()
 {
-   FragColor = vec4(1.0f, 0.1f, 0.5f, 1.0f);
+   outFragColor = vec4(inTextColor, texture(inTextAtlas, inTexCoords).r);
+   // outFragColor = vec4(inTexCoords, 0.0, 1.0);
+   // outFragColor = vec4(1.0, 0.0, 0.0, 1.0);
 }

@@ -1,8 +1,7 @@
 @echo off
 
-Piano\RemindConsole.exe
-
-git add .
+RemindConsole.exe
+git add *
 git status
 
-cmd /k
+cmd /k my_script.bat

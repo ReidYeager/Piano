@@ -11,6 +11,8 @@
 
 #include <GLFW/glfw3.h>
 
+#include <stdarg.h>
+
 namespace Piano {
 
   //=========================
@@ -37,6 +39,13 @@ namespace Piano {
     b8(*ShutdownFunction)();
 
     Piano::Renderer::RendererSettings rendererSettings;
+  };
+
+  struct TextPrintSettings
+  {
+    vec2 startPosition = { 0.0f, 0.0f };
+    f32 scale = 1.0f;
+    vec3 color = { 1.0f, 1.0f, 1.0f };
   };
 
   // Defines API function calls
@@ -66,8 +75,10 @@ namespace Piano {
     void PlaceNoteOnTimeline(u32 _note, f32 _startTime, f32 _duration);
     void PushNotesTimelineToRenderer();
     void ClearNotesTimeline();
-    UiElement AddUiElement(vec2 _position, vec2 _scale = {1, 1});
-
+    void PrintToScreen(TextPrintSettings _settings, const char* _text, ...);
+    void PrintToWorld(TextPrintSettings _settings, const char* _text, ...);
+    void ClearScreenText() { Piano::Renderer::ClearText(false); }
+    void ClearWorldText() { Piano::Renderer::ClearText(true); }
   };
 
 }
