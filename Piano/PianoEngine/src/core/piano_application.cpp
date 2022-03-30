@@ -33,7 +33,7 @@ void Piano::Application::Run(ApplicationSettings* _settings)
   }
   catch (const char* e)
   {
-    PianoLogFatal("Piano application failed\n >> % s", e);
+    PianoLogFatal("Piano application failed\n >> %s", e);
     return;
   }
 
@@ -48,13 +48,13 @@ b8 Piano::Application::Initialize(ApplicationSettings* _settings)
 {
   if (!Piano::Platform::Initialize(_settings->rendererSettings.windowExtents))
   {
-    PianoLogFatal("Platform initialization failed");
+    PianoLogFatal("Platform initialization failed %d", 1);
     return false;
   }
 
   if (!Piano::Renderer::Initialize(_settings->rendererSettings))
   {
-    PianoLogFatal("Renderer initialization failed");
+    PianoLogFatal("Renderer initialization failed %d", 1);
     return false;
   }
 
@@ -76,7 +76,7 @@ b8 Piano::Application::Initialize(ApplicationSettings* _settings)
 
   if (!_settings->InitFunction())
   {
-    PianoLogFatal("Game failed to initialize");
+    PianoLogFatal("Game failed to initialize %d", 1);
     return false;
   }
 
@@ -87,19 +87,19 @@ b8 Piano::Application::Shutdown()
 {
   if (!context.ClientShutdown())
   {
-    PianoLogFatal("Game failed to shutdown properly");
+    PianoLogFatal("Game failed to shutdown properly %d", 1);
     return false;
   }
 
   if (!Piano::Renderer::Shutdown())
   {
-    PianoLogFatal("Renderer failed to shutdown properly");
+    PianoLogFatal("Renderer failed to shutdown properly %d", 1);
     return false;
   }
 
   if (!Piano::Platform::Shutdown())
   {
-    PianoLogFatal("Platform failed to shutdown properly");
+    PianoLogFatal("Platform failed to shutdown properly %d", 1);
     return false;
   }
 
@@ -151,7 +151,7 @@ b8 Piano::Application::MainLoop()
     {
       if (!Piano::Renderer::RenderFrame())
       {
-        PianoLogFatal("Rendering failed");
+        PianoLogFatal("Rendering failed %d", 1);
         return false;
       }
 
@@ -209,7 +209,7 @@ void Piano::Application::ClearNotesTimeline()
 UiElement Piano::Application::AddUiElement(vec2 _position, vec2 _scale /*= {1, 1}*/)
 {
   // Calculate clip-space position
-  PianoLogWarning("Need to implement UI placement");
+  PianoLogWarning("Need to implement UI placement %d", 1);
 
   return {};
 }

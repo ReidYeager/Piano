@@ -8,6 +8,8 @@
 
 #include "math/vector.h"
 
+#include <glm/glm.hpp>
+
 #include <vector>
 
 namespace Piano {
@@ -25,9 +27,9 @@ namespace Piano {
   namespace Renderer {
     struct RendererSettings
     {
-      vec2I windowExtents;                // Pixel width and height of the window
-      KeyboardLayoutTypes keyboardLayout; // Used to determine the required projection width
-      f32 previewDuration;                // Number of seconds to preview
+      vec2I windowExtents; // Pixel width and height of the window
+      f32 keyboardViewWidth;   // Used to determine the required projection width
+      f32 previewDuration; // Number of seconds to preview
     };
 
     // Initializes OpenGL and creates a surface and swapchain
@@ -37,7 +39,7 @@ namespace Piano {
 
     // Functionality =====
     // Changes the camera's projection of the roll
-    void ChangeCameraSettings(KeyboardLayoutTypes _layout, f32 _previewDuration);
+    void ChangeCameraSettings(float _width, f32 _previewDuration);
     // Places the camera at the given time on the roll
     void PlaceCamera(f32 _time);
     // Define the notes to be rendered

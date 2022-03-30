@@ -14,7 +14,7 @@ b8 Init()
   // Place test notes
   for (u32 i = 0; i < 300; i++)
   {
-    app.PlaceNoteOnTimeline(i % 2, i, 1.0f);
+    app.PlaceNoteOnTimeline(i % 62, i, 1.0f);
   }
   app.PushNotesTimelineToRenderer();
 
@@ -63,8 +63,8 @@ int main()
   appSettings.UpdateFunction = Update;
   appSettings.ShutdownFunction = Shutdown;
   appSettings.rendererSettings.windowExtents = { 800, 600 };
-  appSettings.rendererSettings.keyboardLayout = Piano::Renderer::Keyboard_Full;
-  appSettings.rendererSettings.previewDuration = 3.0f;
+  appSettings.rendererSettings.keyboardViewWidth = 63.0f;
+  appSettings.rendererSettings.previewDuration = 63.0f;
 
   app.Run(&appSettings);
 

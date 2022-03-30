@@ -44,7 +44,7 @@ b8 InitializeWindow(u32 _width, u32 _height)
 {
   if (!glfwInit())
   {
-    PianoLogFatal("Failed to init GLFW");
+    PianoLogFatal("Failed to init GLFW %d", 1);
     return false;
   }
 
@@ -57,7 +57,7 @@ b8 InitializeWindow(u32 _width, u32 _height)
   window = glfwCreateWindow(_width, _height, "PianoHero", nullptr, nullptr);
   if (window == nullptr)
   {
-    PianoLogFatal("Failed to open glfw window");
+    PianoLogFatal("Failed to open glfw window %d", 1);
     glfwTerminate();
     return false;
   }

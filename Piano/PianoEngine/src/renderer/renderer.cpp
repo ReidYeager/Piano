@@ -57,7 +57,7 @@ u32 LoadShader(const char* _filename, GLenum _stage)
   return shader;
 }
 
-b8 CreateMaterial(const char* _vert, const char* _frag, Piano::Material* _material)
+b8 CreateMaterial(const char* _vert, const char* _frag, Piano::Material* _material, b8 _dynamic)
 {
   u32 vs, fs;
 
@@ -107,10 +107,10 @@ b8 CreateMaterial(const char* _vert, const char* _frag, Piano::Material* _materi
   };
 
   glBindBuffer(GL_ARRAY_BUFFER, _material->vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, _dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _material->ebo);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, _dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
 
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
@@ -123,27 +123,28 @@ b8 Piano::Renderer::Initialize(Piano::Renderer::RendererSettings _settings)
   // Initialize GLAD / OpenGL =====
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
   {
-    PianoLogFatal("Failed to initialize GLAD\n");
+    PianoLogFatal("Failed to initialize GLAD %d", 1);
     return false;
   }
 
   glViewport(0, 0, _settings.windowExtents.x, _settings.windowExtents.y);
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
-  if (!CreateMaterial("note.vert", "note.frag", &noteMaterial))
+  // Create materials =====
+  if (!CreateMaterial("note.vert", "note.frag", &noteMaterial, false))
   {
-    PianoLogFatal("Failed to create note material");
+    PianoLogFatal("Failed to create note material %d", 1);
     return false;
   }
 
-  if (!CreateMaterial("text.vert", "text.frag", &textMaterial))
+  if (!CreateMaterial("text.vert", "text.frag", &textMaterial, true))
   {
-    PianoLogFatal("Failed to create text material");
+    PianoLogFatal("Failed to create text material %d", 1);
     return false;
   }
 
   // Initialize camera =====
-  ChangeCameraSettings(_settings.keyboardLayout, _settings.previewDuration);
+  ChangeCameraSettings(_settings.keyboardViewWidth, _settings.previewDuration);
   PlaceCamera(0.0f);
 
   return true;
@@ -203,19 +204,9 @@ b8 Piano::Renderer::RenderFrame()
 // Functionality
 //=========================
 
-void Piano::Renderer::ChangeCameraSettings(Piano::Renderer::KeyboardLayoutTypes _layout,
-                                           f32 _previewDuration)
+void Piano::Renderer::ChangeCameraSettings(float _width, f32 _previewDuration)
 {
-  // TODO : Properly calculate the camera width calibration value (currently using random values)
-
-  f32 right = 0.0f;
-  switch (_layout)
-  {
-  case Keyboard_Full: right = 2.0f; break;
-  case Keyboard_Half: right = 1.0f; break;
-  }
-
-  projectionMatrix = glm::ortho(0.0f, right, 0.0f, _previewDuration);
+  projectionMatrix = glm::ortho(0.0f, _width, 0.0f, _previewDuration);
 }
 
 void Piano::Renderer::PlaceCamera(f32 _time)
