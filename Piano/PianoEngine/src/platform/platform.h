@@ -27,6 +27,8 @@ namespace Platform {
   b8 ShouldClose();
   // WIndow getter
   GLFWwindow* GetWindow();
+  // Executes the command in the platform's terminal
+  void ExecuteCommand(const char* _command);
 
 } }
 

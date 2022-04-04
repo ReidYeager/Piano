@@ -40,6 +40,11 @@ void Piano::Application::Run(ApplicationSettings* _settings)
   glfwTerminate();
 }
 
+void Piano::Application::ExecuteCommand(const char* _command)
+{
+  Piano::Platform::ExecuteCommand(_command);
+}
+
 //=========================
 // Init & Shutdown
 //=========================

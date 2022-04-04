@@ -90,6 +90,18 @@ GLFWwindow* Piano::Platform::GetWindow()
 }
 
 #if PIANO_PLATFORM_LINUX
+void Piano::Platform::ExecuteCommand(const char* _command)
+{
+  system(_command);
+}
+#elif PIANO_PLATFORM_WINDOWS
+void Piano::Platform::ExecuteCommand(const char* _command)
+{
+  PianoLogWarning("ExecuteCommand is only run on Linux.\n> Did not execute '%s'", _command);
+}
+#endif
+
+#if PIANO_PLATFORM_LINUX
 void Piano::Platform::PrintToConsole(const char* _message, u32 _color)
 {
   //                               INFO,  DEBUG,   WARN,  ERROR,  FATAL

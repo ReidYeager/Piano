@@ -233,7 +233,7 @@ b8 Piano::Renderer::Initialize(Piano::Renderer::RendererSettings _settings)
     return false;
   }
 
-  if (!CreateMaterial("text.vert", "text.frag", &textMaterial, true))
+  if (!CreateMaterial("text.vert", "text.frag", &textMaterial, false))
   {
     PianoLogFatal("Failed to create text material %d", 1);
     return false;

@@ -30,7 +30,7 @@ namespace Piano {
     u32 textureID;  // ID handle of the glyph texture
     glm::ivec2   size;       // Size of glyph
     glm::ivec2   bearing;    // Offset from baseline to left/top of glyph
-    u32 advance;    // Offset to advance to next glyph
+    i32 advance;    // Offset to advance to next glyph
   };
 
   namespace Renderer {

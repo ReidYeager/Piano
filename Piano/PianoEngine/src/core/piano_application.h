@@ -72,6 +72,8 @@ namespace Piano {
   public:
     void Run(ApplicationSettings* _settings);
 
+    void ExecuteCommand(const char* _command);
+
     void PlaceNoteOnTimeline(u32 _note, f32 _startTime, f32 _duration);
     void PushNotesTimelineToRenderer();
     void ClearNotesTimeline();
