@@ -44,5 +44,5 @@ target_link_libraries(PianoEngine
  OpenGL::GL
 )
 
-add_compile_definitions(PIANO_RESOURCE_DIR="${CMAKE_SOURCE_DIR}/PianoGame/res/")
+#add_compile_definitions(PIANO_RESOURCE_DIR="${CMAKE_SOURCE_DIR}/PianoGame/res/")
 

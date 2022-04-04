@@ -5,12 +5,51 @@
 #include <math.h>
 #include <stdio.h>
 #include <random>
+#include <iostream>
+#include <string>
+#include <fstream>
+#include <iomanip>
+#include <cstdio>
+#include <stdlib.h>
+#include <set>
 
 Piano::Application app;
+
+// emulates the each key. Used in main()
+typedef struct Key
+{
+    int Position;// which key on keyboard. These will be in dec instead of hex for simplicity.
+    bool Pressed; //0 off, 1 on
+} Key;
+
+int i, character;
+std::string logger;
+std::string midiLogFile;
+std::streamoff p=0;
+std::ifstream ifs;
+
+int currentkey;
+int currentpressed;
+
+Key Keyboard[61];
+
 
 // Returns false if a fatal error occurs
 b8 Init()
 {
+  app.ExecuteCommand("sudo truncate -s 0 mididata.mid");
+  //app.ExecuteCommand("sudo amidi -p hw:1 --receive=mididata.mid -d");
+  
+  midiLogFile = "PianoGame/mididata.mid";
+  ifs.open(midiLogFile.c_str());
+  
+  if (!ifs)
+  {
+    PianoLogError("File '%s' not open", midiLogFile.c_str());
+  }
+  
+  PianoLogDebug("%s", midiLogFile.c_str());
+  
   // Place test notes
   for (u32 i = 0; i < 300; i++)
   {
@@ -35,6 +74,24 @@ b8 Init()
 // Returns false if a fatal error occurs
 b8 Update(float _delta)
 {
+  ifs.seekg(p);
+  getline(ifs, logger);
+  for(i=0; i<logger.size(); i++)
+  {
+    character = int(logger[i]);
+    std::cout << std::hex << character << "\n";
+  }
+  if(ifs.tellg() == -1)
+  {
+    p = p + logger.size();
+  }
+  else
+  {
+    p = ifs.tellg();
+  }
+  ifs.clear();
+
+
   // Move the camera up the timeline
   Piano::Renderer::PlaceCamera(Piano::time.totalTime);
 
@@ -59,7 +116,7 @@ b8 Update(float _delta)
   if (deltasSum >= fpsPrintFrequency)
   {
     double avg = deltasSum / deltasCount;
-    PianoLogInfo("<> %4.3f ms -- %4.0f fps", avg * 1000, 1 / avg);
+    PianoLogInfo("\n<> %4.3f ms -- %4.0f fps -- %f", avg * 1000, 1 / avg, Piano::time.totalTime);
 
     deltasSum = 0;
     deltasCount = 0;
@@ -77,6 +134,14 @@ b8 Shutdown()
 
 int main()
 {
+  for(i=0; i<61; i++)
+  {
+      // creates all keys and sets them to off
+      Keyboard[i].Position = 36+i;  // this position is in dec
+      Keyboard[i].Pressed = false; 
+      //stdio::cout << i << endl;
+  }
+
   Piano::ApplicationSettings appSettings {};
   appSettings.InitFunction = Init;
   appSettings.UpdateFunction = Update;
