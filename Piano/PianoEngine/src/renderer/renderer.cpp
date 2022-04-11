@@ -28,7 +28,8 @@ glm::mat4 projectionMatrix = glm::mat4(1.0f);
 glm::mat4 viewProjectionMatrix = glm::mat4(1.0f);
 glm::mat4 screenspaceMatrix = glm::mat4(1.0f);
 
-std::vector<Piano::note> noteTransforms;
+std::vector<Piano::note> whiteKeyTransforms;
+std::vector<Piano::note> blackKeyTransforms;
 
 struct textRenderData
 {
@@ -265,6 +266,9 @@ b8 Piano::Renderer::Shutdown()
 // Update
 //=========================
 
+const vec3 whiteColor = {1.0f, 1.0f, 1.0f};
+const vec3 blackColor = {0.25f, 0.25f, 0.25f};
+
 b8 Piano::Renderer::RenderFrame()
 {
   glClear(GL_COLOR_BUFFER_BIT);
@@ -274,10 +278,23 @@ b8 Piano::Renderer::RenderFrame()
     glUseProgram(noteMaterial.shaderProgram);
     u32 noteTransformVectorID = glGetUniformLocation(noteMaterial.shaderProgram, "transformValues");
     u32 viewID = glGetUniformLocation(noteMaterial.shaderProgram, "viewMatrix");
+    u32 colorID = glGetUniformLocation(noteMaterial.shaderProgram, "inColor");
 
     glUniformMatrix4fv(viewID, 1, GL_FALSE, glm::value_ptr(viewProjectionMatrix));
 
-    for (const auto& noteValue : noteTransforms)
+    glUniform3f(colorID, whiteColor.r, whiteColor.g, whiteColor.b);
+    for (const auto& noteValue : whiteKeyTransforms)
+    {
+      glUniform4fv(noteTransformVectorID, 1, (float*)&noteValue);
+
+      // Render one note quad =====
+      glBindVertexArray(noteMaterial.vao);
+      glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+      glBindVertexArray(0);
+    }
+
+    glUniform3f(colorID, blackColor.r, blackColor.g, blackColor.b);
+    for (const auto& noteValue : blackKeyTransforms)
     {
       glUniform4fv(noteTransformVectorID, 1, (float*)&noteValue);
 
@@ -360,11 +377,20 @@ void Piano::Renderer::PlaceCamera(f32 _time)
 
 void Piano::Renderer::SetNotes(const std::vector<Piano::note>& _notes)
 {
-  noteTransforms.clear();
-  noteTransforms.reserve(_notes.size());
+  whiteKeyTransforms.clear();
+  whiteKeyTransforms.reserve(_notes.size());
+  blackKeyTransforms.clear();
+  blackKeyTransforms.reserve(_notes.size());
   for (auto& n : _notes)
   {
-    noteTransforms.push_back(n);
+    if (n.keyWidth == BLACK_KEY_WIDTH)
+    {
+      blackKeyTransforms.push_back(n);
+    }
+    else
+    {
+      whiteKeyTransforms.push_back(n);
+    }
   }
 }
 

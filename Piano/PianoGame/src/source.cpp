@@ -50,10 +50,16 @@ b8 Init()
   
   PianoLogDebug("%s", midiLogFile.c_str());
   
+  float time = 0.0f;
+
   // Place test notes
-  for (u32 i = 0; i < 300; i++)
+  for (u32 x = 0; x < 1; x++)
   {
-    app.PlaceNoteOnTimeline(i % 62, i, 1.0f);
+    for (u32 i = 0x24; i <= 0x60; i++)
+    {
+      app.PlaceNoteOnTimeline(i, 1.0f, 1.0f);
+      time += 0.25f;
+    }
   }
   app.PushNotesTimelineToRenderer();
 
@@ -93,7 +99,7 @@ b8 Update(float _delta)
 
 
   // Move the camera up the timeline
-  Piano::Renderer::PlaceCamera(Piano::time.totalTime);
+  //Piano::Renderer::PlaceCamera(Piano::time.totalTime);
 
   static b8 tmpShouldClearFlag = true;
   if (tmpShouldClearFlag && Piano::time.totalTime > 5.0f)
@@ -147,7 +153,7 @@ int main()
   appSettings.UpdateFunction = Update;
   appSettings.ShutdownFunction = Shutdown;
   appSettings.rendererSettings.windowExtents = { 800, 600 };
-  appSettings.rendererSettings.keyboardViewWidth = 63.0f;
+  appSettings.rendererSettings.keyboardViewWidth = 36.0f;
   appSettings.rendererSettings.previewDuration = 5.0f;
 
   app.Run(&appSettings);

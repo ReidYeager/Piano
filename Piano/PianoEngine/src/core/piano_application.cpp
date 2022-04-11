@@ -12,6 +12,7 @@
 #include <math.h>
 #include <vector>
 #include <stdio.h>
+#include <algorithm>
 
 // Setup time =====
 Piano::TimeInfo Piano::time;
@@ -174,16 +175,89 @@ b8 Piano::Application::MainLoop()
 // Functionality
 //=========================
 
-void DetermineKeyXValues(int _key, Piano::note* _note)
+void DetermineKeyXValues(u32 _key, Piano::note* _note)
 {
-  // Determine if the key is black (and thus slimmer)
-  if (_key % 2)
-    _note->keyWidth = 0.5f;
-  else
-    _note->keyWidth = 1.0f;
+  const u32 octaveSize = 12;
+  u32 keyShifted = _key - 0x24; // Make the lowest C index 0
+  u32 octave = floor(keyShifted / octaveSize);
+  u32 keyOctave = keyShifted % octaveSize; // Get the key within the octave
 
-  // Do some fancy positioning calculation
-  _note->keyPosition = (f32)_key;
+  _note->keyWidth = 1.0f;
+  f32 blackWidth = BLACK_KEY_WIDTH;
+  f32 halfBlack = blackWidth * 0.5f;
+
+  switch (keyOctave)
+  {
+  // White keys =====
+  case 0:
+  {
+    _note->keyPosition = 0.0f;
+  } break;
+  case 2:
+  {
+    _note->keyPosition = 1.0f;
+  } break;
+  case 4:
+  {
+    _note->keyPosition = 2.0f;
+  } break;
+  case 5:
+  {
+    _note->keyPosition = 3.0f;
+  } break;
+  case 7:
+  {
+    _note->keyPosition = 4.0f;
+  } break;
+  case 9:
+  {
+    _note->keyPosition = 5.0f;
+  } break;
+  case 11:
+  {
+    _note->keyPosition = 6.0f;
+  } break;
+   //The lowest C of the next octave is technically part of this one as well.
+   //This overlap is ignored here
+  //case 12:
+  //{
+  //  _note->keyPosition = 7.0f;
+  //} break;
+
+  // Black keys =====
+  case 1:
+  {
+    _note->keyWidth = blackWidth;
+    _note->keyPosition = 1.0f - halfBlack;
+  } break;
+  case 3:
+  {
+    _note->keyWidth = blackWidth;
+    _note->keyPosition = 2.0f - halfBlack;
+  } break;
+  case 6:
+  {
+    _note->keyWidth = blackWidth;
+    _note->keyPosition = 4.0f - halfBlack;
+  } break;
+  case 8:
+  {
+    _note->keyWidth = blackWidth;
+    _note->keyPosition = 5.0f - halfBlack;
+  } break;
+  case 10:
+  {
+    _note->keyWidth = blackWidth;
+    _note->keyPosition = 6.0f - halfBlack;
+  } break;
+
+  default:
+  {
+    PianoLogError("Unknown key index %u -- %u, %u", keyOctave, _key, octave);
+  } break;
+  }
+
+  _note->keyPosition += octave * 7.0f;
 }
 
 void Piano::Application::PlaceNoteOnTimeline(u32 _note, f32 _startTime, f32 _duration)
@@ -191,9 +265,9 @@ void Piano::Application::PlaceNoteOnTimeline(u32 _note, f32 _startTime, f32 _dur
   // Place and scale the note =====
   Piano::note newNote;
 
-  DetermineKeyXValues(_note, &newNote);
   newNote.startTime = _startTime;
   newNote.duration = _duration;
+  DetermineKeyXValues(_note, &newNote);
 
   notes.push_back(newNote);
 }

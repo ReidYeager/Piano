@@ -5,6 +5,7 @@
 #include "defines.h"
 
 namespace Piano {
+  #define BLACK_KEY_WIDTH 0.5f
   typedef vec4 note;
 
   namespace Renderer {

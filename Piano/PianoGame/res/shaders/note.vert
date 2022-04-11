@@ -6,6 +6,7 @@ uniform vec4 transformValues;
 uniform mat4 viewMatrix;
 
 void main() {
-    vec2 adjustedPosition = (inVertexPosition.xy * transformValues.zw) + transformValues.xy;
+    vec4 gapTransform = vec4(transformValues.x + (transformValues.z * 0.05), transformValues.y, transformValues.z * 0.9, transformValues.w);
+    vec2 adjustedPosition = (inVertexPosition.xy * gapTransform.zw) + gapTransform.xy;
     gl_Position = viewMatrix * vec4(adjustedPosition, 0.0, 1.0);
 }
