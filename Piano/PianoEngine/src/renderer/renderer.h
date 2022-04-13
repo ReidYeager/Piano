@@ -39,6 +39,7 @@ namespace Piano {
       vec2I windowExtents; // Pixel width and height of the window
       f32 keyboardViewWidth;   // Used to determine the required projection width
       f32 previewDuration; // Number of seconds to preview
+      b8 fullscreen;
     };
 
     // Initializes OpenGL and creates a surface and swapchain

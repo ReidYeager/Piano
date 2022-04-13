@@ -20,7 +20,7 @@ namespace Platform {
   // Prints a string to the device's console output
   void PrintToConsole(const char* _message, u32 _color);
   // Initializes platform-dependent components and creates a window
-  b8 Initialize(vec2I _windowExtents);
+  b8 Initialize(b8 _fullscreen, vec2I* _windowExtents);
   // Destroys platform-dependent components
   b8 Shutdown();
   // Returns true if the window is closing

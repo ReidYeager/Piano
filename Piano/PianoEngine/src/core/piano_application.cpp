@@ -51,8 +51,8 @@ void Piano::Application::ExecuteCommand(const char* _command)
 //=========================
 
 b8 Piano::Application::Initialize(ApplicationSettings* _settings)
-{
-  if (!Piano::Platform::Initialize(_settings->rendererSettings.windowExtents))
+{  
+  if (!Piano::Platform::Initialize(_settings->rendererSettings.fullscreen, &_settings->rendererSettings.windowExtents))
   {
     PianoLogFatal("Platform initialization failed %d", 1);
     return false;

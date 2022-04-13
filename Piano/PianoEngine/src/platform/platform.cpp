@@ -45,7 +45,7 @@ void Piano::MemoryFree(void* _data)
 
 GLFWwindow* window = nullptr;
 
-b8 InitializeWindow(u32 _width, u32 _height)
+b8 InitializeWindow(b8 _fullscreen, i32* _width, i32* _height)
 {
   if (!glfwInit())
   {
@@ -59,7 +59,21 @@ b8 InitializeWindow(u32 _width, u32 _height)
   //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_ANY_PROFILE);
   //glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-  window = glfwCreateWindow(_width, _height, "PianoHero", nullptr, nullptr);
+  if (!_fullscreen)
+  {
+    window = glfwCreateWindow(*_width,*_height, "PianoHero", nullptr, nullptr);
+  }
+  else
+  {
+    window = glfwCreateWindow(glfwGetVideoMode(glfwGetPrimaryMonitor())->width,
+                              glfwGetVideoMode(glfwGetPrimaryMonitor())->height,
+                              "PianoHero",
+                              glfwGetPrimaryMonitor(),
+                              nullptr);
+    *_width = glfwGetVideoMode(glfwGetPrimaryMonitor())->width;
+    *_height = glfwGetVideoMode(glfwGetPrimaryMonitor())->height;
+  }
+                            
   if (window == nullptr)
   {
     PianoLogFatal("Failed to open glfw window %d", 1);
@@ -72,9 +86,9 @@ b8 InitializeWindow(u32 _width, u32 _height)
   return true;
 }
 
-b8 Piano::Platform::Initialize(vec2I _windowExtents)
+b8 Piano::Platform::Initialize(b8 _fullscreen, vec2I* _windowExtents)
 {
-  return InitializeWindow(_windowExtents.width, _windowExtents.height);
+  return InitializeWindow(_fullscreen, &_windowExtents->width, &_windowExtents->height);
 }
 
 b8 Piano::Platform::Shutdown()

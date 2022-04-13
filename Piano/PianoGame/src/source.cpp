@@ -12,17 +12,19 @@
 #include <cstdio>
 #include <stdlib.h>
 #include <set>
+#include <stdint.h>
+#include <bitset>
 
 Piano::Application app;
 
 // emulates the each key. Used in main()
 typedef struct Key
 {
-    int Position;// which key on keyboard. These will be in dec instead of hex for simplicity.
     bool Pressed; //0 off, 1 on
 } Key;
 
-int i, character;
+int i;
+uint8_t character;
 std::string logger;
 std::string midiLogFile;
 std::streamoff p=0;
@@ -83,6 +85,7 @@ b8 Init()
 
   return true;
 }
+uint64_t keyboardState = 0;
 
 // Returns false if a fatal error occurs
 b8 Update(float _delta)
@@ -91,9 +94,48 @@ b8 Update(float _delta)
   getline(ifs, logger);
   for(i=0; i<logger.size(); i++)
   {
-    character = int(logger[i]);
-    std::cout << std::hex << character << "\n";
+    character = uint8_t(logger[i]);
+    if((i%3) == 0)
+    {
+      currentpressed = character == 144;
+    }
+    if((i%3) == 1)
+    {
+      currentkey = character-36;
+      
+      PianoLogInfo("%u", currentkey);
+      
+      Keyboard[currentkey].Pressed = currentpressed;
+      
+      keyboardState = currentpressed ? (keyboardState | (u64(1) << currentkey)) : (keyboardState & ~(u64(1) << currentkey));
+      
+      std::bitset<64> tmp(keyboardState);
+      std::cout << tmp << "\n";
+    }
+  
+    PianoLogDebug("%u", character);
   }
+  
+  for (u64 i = keyboardState; i;)
+  {
+    u64 lowestBit = i & -i;
+    u64 index = 0;
+    index += ((lowestBit & 0xffffffff00000000) != 0) * 32;
+    index += ((lowestBit & 0xffff0000ffff0000) != 0) * 16;
+    index += ((lowestBit & 0xff00ff00ff00ff00) != 0) * 8;
+    index += ((lowestBit & 0xf0f0f0f0f0f0f0f0) != 0) * 4;
+    index += ((lowestBit & 0xcccccccccccccccc) != 0) * 2;
+    index += ((lowestBit & 0xaaaaaaaaaaaaaaaa) != 0) * 1;
+    
+    app.PlaceNoteOnTimeline(index + 36, Piano::time.totalTime + 3.0f, _delta * 1.5f);
+    
+    i -= lowestBit;
+  }
+  if (keyboardState)
+  {
+    app.PushNotesTimelineToRenderer();
+  }
+
   if(ifs.tellg() == -1)
   {
     p = p + logger.size();
@@ -106,7 +148,7 @@ b8 Update(float _delta)
 
 
   // Move the camera up the timeline
-  //Piano::Renderer::PlaceCamera(Piano::time.totalTime);
+  Piano::Renderer::PlaceCamera(Piano::time.totalTime);
 
   static b8 tmpShouldClearFlag = true;
   if (tmpShouldClearFlag && Piano::time.totalTime > 5.0f)
@@ -142,6 +184,7 @@ b8 Update(float _delta)
 // Returns false if a fatal error occurs
 b8 Shutdown()
 {
+  PianoLogInfo("Piano inpt command is still running. Hit ctrl+%c", 'C');
   return true;
 }
 
@@ -150,9 +193,7 @@ int main()
   for(i=0; i<61; i++)
   {
       // creates all keys and sets them to off
-      Keyboard[i].Position = 36+i;  // this position is in dec
-      Keyboard[i].Pressed = false; 
-      //stdio::cout << i << endl;
+      Keyboard[i].Pressed = false; // add 36 to i value to use as a note number
   }
 
   Piano::ApplicationSettings appSettings {};
@@ -161,7 +202,8 @@ int main()
   appSettings.ShutdownFunction = Shutdown;
   appSettings.rendererSettings.windowExtents = { 800, 600 };
   appSettings.rendererSettings.keyboardViewWidth = 36.0f;
-  appSettings.rendererSettings.previewDuration = 5.0f;
+  appSettings.rendererSettings.previewDuration = 3.0f;
+  appSettings.rendererSettings.fullscreen = true;
 
   app.Run(&appSettings);
 
