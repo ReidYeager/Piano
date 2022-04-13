@@ -9,6 +9,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <thread>
+#include <vector>
+
+std::thread threads[64];
+u64 availableThreads = -2; // Thread 0 is invalid thread & will always be set to 0
 
 //=========================
 // Memory
@@ -76,6 +81,14 @@ b8 Piano::Platform::Shutdown()
 {
   glfwDestroyWindow(window);
 
+  for (u32 i = 1; i < 64; i++)
+  {
+    if (!(availableThreads & (u64(1) << i)))
+    {
+      threads[i].join();
+    }
+  }
+
   return true;
 }
 
@@ -94,12 +107,45 @@ void Piano::Platform::ExecuteCommand(const char* _command)
 {
   system(_command);
 }
+
 #elif PIANO_PLATFORM_WINDOWS
 void Piano::Platform::ExecuteCommand(const char* _command)
 {
   PianoLogWarning("ExecuteCommand is only run on Linux.\n> Did not execute '%s'", _command);
 }
 #endif
+
+u32 Piano::Platform::StartThread(void(*_function)())
+{
+  if (!availableThreads) // Ensure at least one thread is unused
+  {
+    PianoLogError("All %d threads are in use.", 63);
+    return 0;
+  }
+
+  u64 firstAvailableIndex = 0;
+  u64 lowestBit = availableThreads & -availableThreads;
+  firstAvailableIndex += ((lowestBit & 0xffffffff00000000) != 0) * 32;
+  firstAvailableIndex += ((lowestBit & 0xffff0000ffff0000) != 0) * 16;
+  firstAvailableIndex += ((lowestBit & 0xff00ff00ff00ff00) != 0) * 8;
+  firstAvailableIndex += ((lowestBit & 0xf0f0f0f0f0f0f0f0) != 0) * 4;
+  firstAvailableIndex += ((lowestBit & 0xcccccccccccccccc) != 0) * 2;
+  firstAvailableIndex += ((lowestBit & 0xaaaaaaaaaaaaaaaa) != 0) * 1;
+
+  availableThreads &= ~(u64(1) << firstAvailableIndex);
+  threads[firstAvailableIndex] = std::thread(_function);
+
+  return (u32)firstAvailableIndex;
+}
+
+void Piano::Platform::EndThread(u32 _thread)
+{
+  if (!_thread) // If 0, ignore.
+    return;
+
+  threads[_thread].join();
+  availableThreads |= (u64(1) << _thread);
+}
 
 #if PIANO_PLATFORM_LINUX
 void Piano::Platform::PrintToConsole(const char* _message, u32 _color)

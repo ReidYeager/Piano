@@ -34,13 +34,17 @@ int currentpressed;
 Key Keyboard[61];
 
 
+void ReadPianoInput()
+{
+  app.ExecuteCommand("sudo amidi -p hw:1 --receive=mididata.mid");
+}
+
 // Returns false if a fatal error occurs
 b8 Init()
 {
   app.ExecuteCommand("sudo truncate -s 0 mididata.mid");
-  //app.ExecuteCommand("sudo amidi -p hw:1 --receive=mididata.mid -d");
   
-  midiLogFile = "PianoGame/mididata.mid";
+  midiLogFile = "mididata.mid";
   ifs.open(midiLogFile.c_str());
   
   if (!ifs)
@@ -73,6 +77,9 @@ b8 Init()
   printSettings.color = { 0.1f, 0.75f, 0.15f };
   printSettings.startPosition = { 2.0f, 8.0f };
   app.PrintToWorld(printSettings, "AAAAAAAA %s", "AA");
+
+  // Runs for the entire execution
+  Piano::Platform::StartThread(ReadPianoInput);
 
   return true;
 }

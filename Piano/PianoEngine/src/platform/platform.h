@@ -30,6 +30,9 @@ namespace Platform {
   // Executes the command in the platform's terminal
   void ExecuteCommand(const char* _command);
 
+  u32 StartThread(void(*_function)());
+  void EndThread(u32 _thread);
+
 } }
 
 #endif // !PIANO_PLATFORM_PLATFORM_H_
