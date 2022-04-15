@@ -77,6 +77,7 @@ namespace Piano {
     void PlaceNoteOnTimeline(u32 _note, f32 _startTime, f32 _duration);
     void PushNotesTimelineToRenderer();
     void ClearNotesTimeline();
+    void SetRenderOctaveLines(b8 _value);
     void PrintToScreen(TextPrintSettings _settings, const char* _text, ...);
     void PrintToWorld(TextPrintSettings _settings, const char* _text, ...);
     void ClearScreenText() { Piano::Renderer::ClearText(false); }

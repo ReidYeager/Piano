@@ -6,6 +6,7 @@
 
 namespace Piano {
   #define BLACK_KEY_WIDTH 0.5f
+  #define WHITE_KEY_WIDTH 0.75f
   typedef vec4 note;
 
   namespace Renderer {

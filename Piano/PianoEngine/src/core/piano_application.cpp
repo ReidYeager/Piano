@@ -13,6 +13,9 @@
 #include <vector>
 #include <stdio.h>
 #include <algorithm>
+#include <math.h>
+
+std::vector<Piano::note> notes;
 
 // Setup time =====
 Piano::TimeInfo Piano::time;
@@ -91,6 +94,9 @@ b8 Piano::Application::Initialize(ApplicationSettings* _settings)
 
 b8 Piano::Application::Shutdown()
 {
+  PianoLogInfo("Was rendering %u notes", notes.size());
+  notes.clear();
+  
   if (!context.ClientShutdown())
   {
     PianoLogFatal("Game failed to shutdown properly %d", 1);
@@ -136,9 +142,6 @@ void Piano::Application::HandleInput(GLFWwindow* _window)
   // TODO : Update the status of all applicable keys (keyboard & piano)
 }
 
-#include <math.h>
-std::vector<Piano::note> notes;
-
 b8 Piano::Application::MainLoop()
 {
   while (!Piano::Platform::ShouldClose())
@@ -182,7 +185,7 @@ void DetermineKeyXValues(u32 _key, Piano::note* _note)
   u32 octave = floor(keyShifted / octaveSize);
   u32 keyOctave = keyShifted % octaveSize; // Get the key within the octave
 
-  _note->keyWidth = 1.0f;
+  _note->keyWidth = WHITE_KEY_WIDTH;
   f32 blackWidth = BLACK_KEY_WIDTH;
   f32 halfBlack = blackWidth * 0.5f;
 
@@ -321,5 +324,10 @@ void Piano::Application::PrintToWorld(TextPrintSettings _settings, const char* _
                            _settings.color,
                            _settings.scale,
                            true);
+}
+
+void Piano::Application::SetRenderOctaveLines(b8 _value)
+{
+  Piano::Renderer::SetRenderOctaveNotes(_value);
 }
 

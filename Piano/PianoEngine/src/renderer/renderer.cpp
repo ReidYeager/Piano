@@ -31,6 +31,14 @@ glm::mat4 screenspaceMatrix = glm::mat4(1.0f);
 std::vector<Piano::note> whiteKeyTransforms;
 std::vector<Piano::note> blackKeyTransforms;
 
+//const vec3 whiteColor = {0.87f, 0.79f, 0.05f}; // yellow
+const vec3 whiteColor = {1.0f, 1.0f, 1.0f};
+const vec3 blackColor = {0.0f, 0.0f, 1.0f};
+const vec3 octaveColor = {0.5f, 0.5f, 0.5f};
+const f32 octaveWidth = 0.2f;
+
+void(*OctaveLineRender)();
+
 struct textRenderData
 {
   vec4 transform;
@@ -40,6 +48,9 @@ struct textRenderData
 
 std::vector<textRenderData> screenspaceText;
 std::vector<textRenderData> worldspaceText;
+
+void DoNothing() {}
+void RenderOctaveLines();
 
 //=========================
 // Init & Shutdown
@@ -188,6 +199,8 @@ b8 InitializeFontTextures(FT_Face& _vectorFace)
 
 b8 Piano::Renderer::Initialize(Piano::Renderer::RendererSettings _settings)
 {
+  Piano::Renderer::SetRenderOctaveNotes(true);
+  
   windowExtents = _settings.windowExtents;
 
   // Initialize GLAD / OpenGL =====
@@ -266,12 +279,12 @@ b8 Piano::Renderer::Shutdown()
 // Update
 //=========================
 
-const vec3 whiteColor = {1.0f, 1.0f, 1.0f};
-const vec3 blackColor = {0.25f, 0.25f, 0.25f};
-
 b8 Piano::Renderer::RenderFrame()
 {
   glClear(GL_COLOR_BUFFER_BIT);
+
+  // Render octave lines =====
+  OctaveLineRender();
 
   // Render notes =====
   {
@@ -444,5 +457,34 @@ void Piano::Renderer::ClearText(b8 _clearWorldText)
   else
   {
     screenspaceText.clear();
+  }
+}
+
+void Piano::Renderer::SetRenderOctaveNotes(b8 _value)
+{
+  OctaveLineRender = _value ? RenderOctaveLines : DoNothing;
+}
+
+void RenderOctaveLines()
+{
+  glUseProgram(noteMaterial.shaderProgram);
+  u32 noteTransformVectorID = glGetUniformLocation(noteMaterial.shaderProgram, "transformValues");
+  u32 viewID = glGetUniformLocation(noteMaterial.shaderProgram, "viewMatrix");
+  u32 colorID = glGetUniformLocation(noteMaterial.shaderProgram, "inColor");
+
+  glUniformMatrix4fv(viewID, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
+
+  glUniform3f(colorID, octaveColor.r, octaveColor.g, octaveColor.b);
+  Piano::note tmpNote = {0, -1.0f, octaveWidth, -5.0f};
+  
+  for (u32 i = 0; i < 10; i++)
+  {
+    tmpNote.keyPosition = i * 7.0f - ((octaveWidth * 0.5f + WHITE_KEY_WIDTH * 0.2f) * (i > 0));
+    glUniform4fv(noteTransformVectorID, 1, (float*)&tmpNote);
+
+    // Render one note quad =====
+    glBindVertexArray(noteMaterial.vao);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
   }
 }

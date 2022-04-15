@@ -157,6 +157,7 @@ b8 Update(float _delta)
     app.ClearScreenText();
     app.ClearWorldText();
     app.PrintToScreen({}, "Text cleared from screen and world");
+    //app.SetRenderOctaveLines(false);
   }
 
   #ifdef PIANO_DEBUG
@@ -184,6 +185,7 @@ b8 Update(float _delta)
 // Returns false if a fatal error occurs
 b8 Shutdown()
 {
+  PianoLogInfo("<> Runtime : %f", Piano::time.totalTime);
   PianoLogInfo("Piano inpt command is still running. Hit ctrl+%c", 'C');
   return true;
 }

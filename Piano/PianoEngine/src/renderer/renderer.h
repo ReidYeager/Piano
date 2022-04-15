@@ -60,6 +60,7 @@ namespace Piano {
                  f32 _scale = 1.0f,
                  b8 _printToWorldspace = false);
     void ClearText(b8 _clearWorldText);
+    void SetRenderOctaveNotes(b8 _value);
 } }
 
 #endif //!PIANO_RENDERER_RENDERER_H_
