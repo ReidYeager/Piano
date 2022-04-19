@@ -15,6 +15,8 @@
 #include <stdint.h>
 #include <bitset>
 
+#include "midi.h"
+
 Piano::Application app;
 
 // emulates the each key. Used in main()
@@ -59,14 +61,18 @@ b8 Init()
   float time = 0.0f;
 
   // Place test notes
-  for (u32 x = 0; x < 1; x++)
+  //const char* fileName = "doublenotes_slow1.mid"; // Does not read notes properly for some reason
+  //const char* fileName = "testsongoctave.mid";
+  //const char* fileName = "rugrats.mid"; // Does not read notes properly for some reason
+  const char* fileName = "ttls.mid";
+  //const char* fileName = "canond.mid";
+
+  std::vector<Piano::note> loadedNotes = LoadNotesFromFile(fileName);
+  for (auto& n : loadedNotes)
   {
-    for (u32 i = 0x24; i <= 0x60; i++)
-    {
-      app.PlaceNoteOnTimeline(i, 1.0f, 1.0f);
-      time += 0.25f;
-    }
+    app.PlaceNoteOnTimeline(n.keyPosition, n.startTime, n.duration);
   }
+
   app.PushNotesTimelineToRenderer();
 
   app.PrintToScreen({}, "This is some test text with %d", 1221);
@@ -116,25 +122,25 @@ b8 Update(float _delta)
     PianoLogDebug("%u", character);
   }
   
-  for (u64 i = keyboardState; i;)
-  {
-    u64 lowestBit = i & -i;
-    u64 index = 0;
-    index += ((lowestBit & 0xffffffff00000000) != 0) * 32;
-    index += ((lowestBit & 0xffff0000ffff0000) != 0) * 16;
-    index += ((lowestBit & 0xff00ff00ff00ff00) != 0) * 8;
-    index += ((lowestBit & 0xf0f0f0f0f0f0f0f0) != 0) * 4;
-    index += ((lowestBit & 0xcccccccccccccccc) != 0) * 2;
-    index += ((lowestBit & 0xaaaaaaaaaaaaaaaa) != 0) * 1;
-    
-    app.PlaceNoteOnTimeline(index + 36, Piano::time.totalTime + 3.0f, _delta * 1.5f);
-    
-    i -= lowestBit;
-  }
-  if (keyboardState)
-  {
-    app.PushNotesTimelineToRenderer();
-  }
+  //for (u64 i = keyboardState; i;)
+  //{
+  //  u64 lowestBit = i & -i;
+  //  u64 index = 0;
+  //  index += ((lowestBit & 0xffffffff00000000) != 0) * 32;
+  //  index += ((lowestBit & 0xffff0000ffff0000) != 0) * 16;
+  //  index += ((lowestBit & 0xff00ff00ff00ff00) != 0) * 8;
+  //  index += ((lowestBit & 0xf0f0f0f0f0f0f0f0) != 0) * 4;
+  //  index += ((lowestBit & 0xcccccccccccccccc) != 0) * 2;
+  //  index += ((lowestBit & 0xaaaaaaaaaaaaaaaa) != 0) * 1;
+  //  
+  //  app.PlaceNoteOnTimeline(index + 36, Piano::time.totalTime + 3.0f, _delta * 1.5f);
+  //  
+  //  i -= lowestBit;
+  //}
+  //if (keyboardState)
+  //{
+  //  app.PushNotesTimelineToRenderer();
+  //}
 
   if(ifs.tellg() == -1)
   {
@@ -148,7 +154,7 @@ b8 Update(float _delta)
 
 
   // Move the camera up the timeline
-  Piano::Renderer::PlaceCamera(Piano::time.totalTime);
+  Piano::Renderer::PlaceCamera(Piano::time.totalTime * 0.5f);
 
   static b8 tmpShouldClearFlag = true;
   if (tmpShouldClearFlag && Piano::time.totalTime > 5.0f)
