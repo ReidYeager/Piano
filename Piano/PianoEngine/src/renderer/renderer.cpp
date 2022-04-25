@@ -433,7 +433,7 @@ void Piano::Renderer::AddText(const std::string& _text,
     glyph = fontGlyphs[c];
 
     xPosition = originX + (glyph.bearing.x * xScale);
-    yPosition = originY + ((glyph.size.y - glyph.bearing.y) * yScale);
+    yPosition = originY - ((glyph.size.y - glyph.bearing.y) * yScale);
     width = glyph.size.x * xScale;
     height = glyph.size.y * yScale;
 

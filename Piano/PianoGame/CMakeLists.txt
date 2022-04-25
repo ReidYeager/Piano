@@ -8,7 +8,9 @@ cmake_minimum_required (VERSION 3.8)
 # Add source to this project's executable.
 add_executable (PianoGame
  "src/source.cpp"
-  "src/midi.cpp")
+ "src/midi.cpp"
+ "src/midi.h"
+ "src/gameplay.h")
 
 find_package(OpenGL REQUIRED)
 

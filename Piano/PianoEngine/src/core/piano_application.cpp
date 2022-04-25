@@ -265,6 +265,8 @@ void DetermineKeyXValues(u32 _key, Piano::note* _note)
 
 void Piano::Application::PlaceNoteOnTimeline(u32 _note, f32 _startTime, f32 _duration)
 {
+  PianoLogDebug("Adding note %d to timeline", notes.size());
+  
   // Place and scale the note =====
   Piano::note newNote;
 
@@ -278,6 +280,7 @@ void Piano::Application::PlaceNoteOnTimeline(u32 _note, f32 _startTime, f32 _dur
 
 void Piano::Application::PushNotesTimelineToRenderer()
 {
+  PianoLogDebug("PUSH %d NOTES TO %s", notes.size(), "TIMELINE");
   Piano::Renderer::SetNotes(notes);
 }
 
@@ -289,7 +292,7 @@ void Piano::Application::ClearNotesTimeline()
 }
 
 void Piano::Application::PrintToScreen(TextPrintSettings _settings, const char* _text, ...)
-{
+{  
   // Limit 65,535 characters per message
   const u16 length = 0xFFFF;
   char* outMessage = new char[length];

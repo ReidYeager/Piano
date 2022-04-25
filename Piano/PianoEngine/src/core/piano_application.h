@@ -3,6 +3,7 @@
 #define PIANO_PIANO_APPLICATION_H_
 
 #include "defines.h"
+#include "logger.h"
 
 #include "math/vector.h"
 #include "platform/platform.h"
