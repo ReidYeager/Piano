@@ -42,14 +42,17 @@ int start_flag = 0;
 
 int first_press = 0;
 
-// file name
-const char* fileName = "ttls.mid";
+// Song file names =====
+const std::vector<const char*> songFileNames {
+  "ttls.mid",
+  "testsongoctave.mid"
+};
 
 // how fast to move camera
 float difficulty_mult = 1.0f;
 
 // time keepers
-float realtime = 0;
+float songtime = 0;
 float temptime = 0;
 
 // score keeping
@@ -60,11 +63,29 @@ std::vector<Piano::note> loadedNotes;
 
 float previewDuration = 3.0f; // number of seconds to see ahead
 uint64_t keyboardState = 0;
+uint64_t keyboardFrameState = 0;
 
 // functions
 
 void(*CurrentStateUpdate)(float _delta);
 GameStatesEnum currentState;
+
+int BitScanForward(u64 _input)
+{
+  int bitIndex = 0;
+  _input = _input & -_input;
+  bitIndex += ((0xffffffff00000000 & _input) != 0) * 32;
+  bitIndex += ((0xffff0000ffff0000 & _input) != 0) * 16;
+  bitIndex += ((0xff00ff00ff00ff00 & _input) != 0) * 8;
+  bitIndex += ((0xf0f0f0f0f0f0f0f0 & _input) != 0) * 4;
+  bitIndex += ((0xcccccccccccccccc & _input) != 0) * 2;
+  bitIndex += ((0xaaaaaaaaaaaaaaaa & _input) != 0) * 1;
+  return bitIndex;
+}
+int BitScanForward(u32 _input)
+{
+  return BitScanForward((u64)_input);
+}
 
 void ReadPianoInput()
 {
@@ -75,6 +96,17 @@ void ReadPianoInput()
 b8 Init()
 {
   app.ExecuteCommand("sudo truncate -s 0 mididata.mid");
+  
+  u32 testThingy = (1 << 2) | (1 << 15) | (1 << 28);
+  printf("A : %d", BitScanForward(testThingy));
+  testThingy &= ~(testThingy & -testThingy);
+  printf("B : %d", BitScanForward(testThingy));
+  testThingy &= ~(testThingy & -testThingy);
+  printf("C : %d", BitScanForward(testThingy));
+  testThingy &= ~(testThingy & -testThingy);
+  printf("D : %d", BitScanForward(testThingy));
+  
+  
   
   midiLogFile = "mididata.mid";
   ifs.open(midiLogFile.c_str());
@@ -105,19 +137,6 @@ b8 Update(float _delta)
 
   #ifdef PIANO_DEBUG
   // check which notes are pressed and how many are pressed
-  for(u64 i = 0; i < 61; i++) {
-    if(Keyboard[i].Pressed == true) {
-      //testing stuff
-//      printf("score: %d,  realtime: %f\n", score, realtime);
-      
-      for(u64 j = 0; j<loadedNotes.size(); j++) {
-        if((realtime >= loadedNotes[j].startTime) && (realtime <= (loadedNotes[j].startTime + loadedNotes[j].duration)) && (i == loadedNotes[j].keyPosition)) {
-          score = score + 10;
-//          printf("score: %d\n", score);
-        }
-      }
-    }
-  }
   
   // Log the average delta time & framerate =====
   static f32 deltasSum = 0.0f;
@@ -151,30 +170,10 @@ b8 Shutdown()
   return true;
 }
 
-int main()
-{
-  for(i=0; i<61; i++)
-  {
-      // creates all keys and sets them to off
-      Keyboard[i].Pressed = false; // add 36 to i value to use as a note number
-  }
-
-  Piano::ApplicationSettings appSettings {};
-  appSettings.InitFunction = Init;
-  appSettings.UpdateFunction = Update;
-  appSettings.ShutdownFunction = Shutdown;
-  appSettings.rendererSettings.windowExtents = { 800, 600 };
-  appSettings.rendererSettings.keyboardViewWidth = 36.0f;
-  appSettings.rendererSettings.previewDuration = previewDuration;
-  appSettings.rendererSettings.fullscreen = true;
-
-  app.Run(&appSettings);
-
-  return 0;
-}
-
 void UpdateInput()
 {
+  keyboardFrameState = 0;
+  
   ifs.seekg(p);
   getline(ifs, logger);
   for(i=0; i<logger.size(); i++)
@@ -193,6 +192,7 @@ void UpdateInput()
       Keyboard[currentkey].Pressed = currentpressed;
       
       keyboardState = currentpressed ? (keyboardState | (u64(1) << currentkey)) : (keyboardState & ~(u64(1) << currentkey));
+      keyboardFrameState = currentpressed ? (keyboardState | (u64(1) << currentkey)) : (keyboardState & ~(u64(1) << currentkey));
       
       std::bitset<64> tmp(keyboardState);
 //      std::cout << tmp << "\n";
@@ -235,6 +235,20 @@ void TransitionToState(GameStatesEnum _newState)
     } break;
     case Playing:
     {
+      songtime = 0;
+      // Start updating
+      for (auto& n : loadedNotes)
+      {
+        app.PlaceNoteOnTimeline(n.keyPosition, n.startTime, n.duration);
+      }
+      app.PushNotesTimelineToRenderer();
+      app.SetRenderOctaveLines(true);
+      
+      CurrentStateUpdate = StateUpdatePlaying;
+    } break;
+    case Preplay:
+    {
+      songtime = 0;
       // Load notes for render
       for (auto& n : loadedNotes)
       {
@@ -242,10 +256,11 @@ void TransitionToState(GameStatesEnum _newState)
       }
       app.PushNotesTimelineToRenderer();
       app.SetRenderOctaveLines(true);
-      // Start updating
-      CurrentStateUpdate = StateUpdatePlaying;
-      realtime = -(previewDuration * difficulty_mult);
-    } break;
+      
+      Piano::Renderer::PlaceCamera(0);
+      CurrentStateUpdate = StateUpdatePreplay;
+    } break;  
+  
   }
   
   currentState = _newState;
@@ -255,16 +270,18 @@ void ShowMainMenu()
 {
   Piano::Renderer::PlaceCamera(Piano::time.totalTime * 0.0f);
   Piano::TextPrintSettings printSettings {};
-  
+
   printSettings.color = { 255.0f, 255.0f, 255.0f };
-  printSettings.startPosition = { 800.0f, 500.0f };
+  printSettings.startPosition = { 800.0f, 700.0f };
   app.PrintToScreen(printSettings, "Select A Song");
-  printSettings.color = { 255.0f, 255.0f, 0.0f };
-  printSettings.startPosition = { 800.0f, 400.0f };
-  app.PrintToScreen(printSettings, "Twinkle Twinkle Little Star");
-  printSettings.color = { 224.0f, 0.0f, 0.0f };
-  printSettings.startPosition = { 800.0f, 300.0f };
-  app.PrintToScreen(printSettings, "Song B");
+
+  int index = 1;
+  for (const char* n : songFileNames)
+  {
+    printSettings.color = { 255.0f / index, 255.0f / index, 255.0f / index };
+    printSettings.startPosition = { 800.0f, 700.0f - (50.0f * index++) };
+    app.PrintToScreen(printSettings, n);
+  }
 }
 
 void ShowDifficultySelection()
@@ -288,46 +305,72 @@ void ShowDifficultySelection()
 
 void StateUpdateMainMenu(float _delta)
 {
-  //Load the song onto the screen after first key pressed
-  if (currentkey == 0) {
-    app.PrintToScreen({}, "Key was pressed! %d");
-    
+  if (keyboardFrameState)
+  {
     // Load the selected song (Don't display it yet)
-    loadedNotes = LoadNotesFromFile(fileName);
-    TransitionToState(Difficulty_Select);
+    
+    if (currentkey < songFileNames.size())
+    {
+      loadedNotes = LoadNotesFromFile(songFileNames[currentkey]);
+      TransitionToState(Difficulty_Select);
+      
+      int index = 0;
+      for (const Piano::note& n : loadedNotes)
+      {
+        printf("Note %d : %f\n", index++, n.keyPosition);
+      }
+    }
   }
 }
 
 void StateUpdateDifficultySelect(float _delta)
 {
-  // make variable for currentkey == ###
-  //easy press key number 2
-  if (currentkey == 2)
+  if (keyboardFrameState)
   {
-    difficulty_mult = 0.1f;
-    TransitionToState(Playing);
-    app.PrintToScreen({}, "Key was pressed! %d");
-  }
-  //Medium press key number 4
-  if (currentkey == 4) {
-    difficulty_mult = 0.3f;
-    TransitionToState(Playing);
-    app.PrintToScreen({}, "Key was pressed! %d");
-  }
-  //hard press key number 5
-  if (currentkey == 5) {
-    difficulty_mult = 0.5f;
-    TransitionToState(Playing);
-    app.PrintToScreen({}, "Key was pressed! %d");
+    if (currentkey == 2)
+    {
+      difficulty_mult = 0.5f;
+      TransitionToState(Preplay);
+    }
+    if (currentkey == 4) {
+      difficulty_mult = 0.7f;
+      TransitionToState(Preplay);
+    }
+    if (currentkey == 5) {
+      difficulty_mult = 1.0f;
+      TransitionToState(Preplay);
+    }
   }
 }
 
 void StateUpdatePlaying(float _delta)
 {
   // Move the camera up the timeline
-  // realtime keeps track of the ingame realtime since it changes with the difficulty
-  realtime += _delta * difficulty_mult; // this might need some adjusting
-  Piano::Renderer::PlaceCamera(realtime);
+  // songtime keeps track of the ingame realtime since it changes with the difficulty
+  songtime += _delta * difficulty_mult; // this might need some adjusting
+  Piano::Renderer::PlaceCamera(songtime);
+  
+  static f32 localScore = 0.0f;
+  
+  static float noteStart = 0.0f;
+  static float noteEnd = 0.0f;
+  
+  int currentKeyIndex = 0;
+  
+  // Scoring =====
+  for(u64 i = 0; i < loadedNotes.size(); i++)
+  {
+    noteStart = loadedNotes[i].startTime;
+    noteEnd = loadedNotes[i].startTime + loadedNotes[i].duration;
+    
+    if (songtime >= noteStart && songtime <= noteEnd)
+      currentKeyIndex = i;
+    
+    for (u64 tmpState = keyboardState; tmpState; tmpState &= ~(tmpState & -tmpState))
+    {
+      localScore += (10 * _delta) * (songtime >= noteStart && songtime <= noteEnd) * ((u32)loadedNotes[i].keyPosition == BitScanForward(tmpState) + 36);
+    }
+  }
 
   // printing score to screen
   Piano::TextPrintSettings printSettings {};
@@ -335,5 +378,42 @@ void StateUpdatePlaying(float _delta)
   printSettings.startPosition = { 960.0f, 1000.0f };
 
   app.ClearScreenText();
-  app.PrintToScreen(printSettings, "Score: %d", score);
+  app.PrintToScreen(printSettings, "Score: %f -- %d", localScore, BitScanForward(keyboardState) + 36);
+  
+  
+  if (songtime >= (loadedNotes[loadedNotes.size() - 1].startTime + loadedNotes[loadedNotes.size() - 1].duration + 1.0f))
+  {
+    TransitionToState(Main_Menu);
+  }
+  
+}
+
+void StateUpdatePreplay(float _delta)
+{
+  if(keyboardFrameState)
+  {
+    TransitionToState(Playing);
+  }
+}  
+
+int main()
+{
+  for(i=0; i<61; i++)
+  {
+      // creates all keys and sets them to off
+      Keyboard[i].Pressed = false; // add 36 to i value to use as a note number
+  }
+
+  Piano::ApplicationSettings appSettings {};
+  appSettings.InitFunction = Init;
+  appSettings.UpdateFunction = Update;
+  appSettings.ShutdownFunction = Shutdown;
+  appSettings.rendererSettings.windowExtents = { 800, 600 };
+  appSettings.rendererSettings.keyboardViewWidth = 36.0f;
+  appSettings.rendererSettings.previewDuration = previewDuration;
+  appSettings.rendererSettings.fullscreen = true;
+
+  app.Run(&appSettings);
+
+  return 0;
 }
