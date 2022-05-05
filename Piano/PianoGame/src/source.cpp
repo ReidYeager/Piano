@@ -65,6 +65,8 @@ float previewDuration = 3.0f; // number of seconds to see ahead
 uint64_t keyboardState = 0;
 uint64_t keyboardFrameState = 0;
 
+u32 readInputThread = 0;
+
 // functions
 
 void(*CurrentStateUpdate)(float _delta);
@@ -87,9 +89,17 @@ int BitScanForward(u32 _input)
   return BitScanForward((u64)_input);
 }
 
-void ReadPianoInput()
+void CreateSong()
+{
+  app.ExecuteCommand(">customSong.mid");
+  app.ExecuteCommand("sudo arecordmidi -p 20:0 customSong.mid");
+}
+
+void* ReadPianoInput(void* _in)
 {
   app.ExecuteCommand("sudo amidi -p hw:1 --receive=mididata.mid");
+  
+  return 0;
 }
 
 // Returns false if a fatal error occurs
@@ -123,7 +133,7 @@ b8 Init()
   TransitionToState(Main_Menu);
   
   // Runs for the entire execution
-  Piano::Platform::StartThread(ReadPianoInput);
+  readInputThread = Piano::Platform::StartThread(ReadPianoInput);
 
   return true;
 }
@@ -162,11 +172,10 @@ b8 Update(float _delta)
 // Returns false if a fatal error occurs
 b8 Shutdown()
 {
-  for(i = 0; i<loadedNotes.size(); i++){
-      printf("%f,  %f,  %f\n", loadedNotes[i].keyPosition, loadedNotes[i].startTime, loadedNotes[i].duration);
-  }
   PianoLogInfo("<> Runtime : %f", Piano::time.totalTime);
-  PianoLogInfo("Piano inpt command is still running. Hit ctrl+%c", 'C');
+  
+  Piano::Platform::EndThread(readInputThread);
+  
   return true;
 }
 
@@ -259,8 +268,12 @@ void TransitionToState(GameStatesEnum _newState)
       
       Piano::Renderer::PlaceCamera(0);
       CurrentStateUpdate = StateUpdatePreplay;
+      score = 0;
     } break;  
-  
+    case Record:
+    {
+      CurrentStateUpdate = StateUpdateRecord;
+    } break;  
   }
   
   currentState = _newState;
@@ -368,7 +381,7 @@ void StateUpdatePlaying(float _delta)
     
     for (u64 tmpState = keyboardState; tmpState; tmpState &= ~(tmpState & -tmpState))
     {
-      localScore += (10 * _delta) * (songtime >= noteStart && songtime <= noteEnd) * ((u32)loadedNotes[i].keyPosition == BitScanForward(tmpState) + 36);
+      score += (10 * _delta) * (songtime >= noteStart && songtime <= noteEnd) * ((u32)loadedNotes[i].keyPosition == BitScanForward(tmpState) + 36);
     }
   }
 
@@ -378,7 +391,7 @@ void StateUpdatePlaying(float _delta)
   printSettings.startPosition = { 960.0f, 1000.0f };
 
   app.ClearScreenText();
-  app.PrintToScreen(printSettings, "Score: %f -- %d", localScore, BitScanForward(keyboardState) + 36);
+  app.PrintToScreen(printSettings, "Score: %f", score);
   
   
   if (songtime >= (loadedNotes[loadedNotes.size() - 1].startTime + loadedNotes[loadedNotes.size() - 1].duration + 1.0f))
@@ -396,6 +409,11 @@ void StateUpdatePreplay(float _delta)
   }
 }  
 
+void StateUpdateRecord(float _delta)
+{
+  // once timer ends or something else, stop recording and go back to main menu
+  TransitionToState(Main_Menu);
+}
 int main()
 {
   for(i=0; i<61; i++)
@@ -411,7 +429,7 @@ int main()
   appSettings.rendererSettings.windowExtents = { 800, 600 };
   appSettings.rendererSettings.keyboardViewWidth = 36.0f;
   appSettings.rendererSettings.previewDuration = previewDuration;
-  appSettings.rendererSettings.fullscreen = true;
+  appSettings.rendererSettings.fullscreen = false;
 
   app.Run(&appSettings);
 

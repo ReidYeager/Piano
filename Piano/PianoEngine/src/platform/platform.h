@@ -30,7 +30,7 @@ namespace Platform {
   // Executes the command in the platform's terminal
   void ExecuteCommand(const char* _command);
 
-  u32 StartThread(void(*_function)());
+  u32 StartThread(void*(*_function)(void*));
   void EndThread(u32 _thread);
 
 } }

@@ -11,8 +11,10 @@
 #include <string.h>
 #include <thread>
 #include <vector>
+#include <pthread.h>
 
-std::thread threads[64];
+//std::thread threads[64];
+pthread_t threads[64];
 u64 availableThreads = -2; // Thread 0 is invalid thread & will always be set to 0
 
 //=========================
@@ -99,7 +101,7 @@ b8 Piano::Platform::Shutdown()
   {
     if (!(availableThreads & (u64(1) << i)))
     {
-      threads[i].join();
+      EndThread(i);
     }
   }
 
@@ -129,7 +131,7 @@ void Piano::Platform::ExecuteCommand(const char* _command)
 }
 #endif
 
-u32 Piano::Platform::StartThread(void(*_function)())
+u32 Piano::Platform::StartThread(void*(*_function)(void*))
 {
   if (!availableThreads) // Ensure at least one thread is unused
   {
@@ -147,7 +149,8 @@ u32 Piano::Platform::StartThread(void(*_function)())
   firstAvailableIndex += ((lowestBit & 0xaaaaaaaaaaaaaaaa) != 0) * 1;
 
   availableThreads &= ~(u64(1) << firstAvailableIndex);
-  threads[firstAvailableIndex] = std::thread(_function);
+  //threads[firstAvailableIndex] = std::thread(_function);
+  pthread_create(&threads[firstAvailableIndex], NULL, _function, NULL);
 
   return (u32)firstAvailableIndex;
 }
@@ -157,7 +160,8 @@ void Piano::Platform::EndThread(u32 _thread)
   if (!_thread) // If 0, ignore.
     return;
 
-  threads[_thread].join();
+  //threads[_thread].join();
+  pthread_cancel(threads[_thread]);
   availableThreads |= (u64(1) << _thread);
 }
 

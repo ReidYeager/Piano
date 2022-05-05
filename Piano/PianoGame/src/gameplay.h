@@ -10,7 +10,8 @@ enum GameStatesEnum
 	Main_Menu = 0,
 	Difficulty_Select = 1,
 	Playing = 2,
-	Preplay = 3
+	Preplay = 3,
+	Record = 4
 };
 
 void UpdateInput();
@@ -21,5 +22,6 @@ void StateUpdateMainMenu(float _delta);
 void StateUpdateDifficultySelect(float _delta);
 void StateUpdatePlaying(float _delta);
 void StateUpdatePreplay(float _delta);
+void StateUpdateRecord(float _delta);
 
 #endif // !PIANO_GAME_GAMEPLAY_H_
