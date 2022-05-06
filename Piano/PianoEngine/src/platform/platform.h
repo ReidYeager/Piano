@@ -7,6 +7,7 @@
 #include "math/vector.h"
 
 #include "GLFW/glfw3.h"
+#include <pthread.h>
 
 namespace Piano {
   void* MemoryAllocate(u64 _size);

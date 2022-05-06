@@ -43,10 +43,10 @@ b8 SearchForFileStart(const unsigned char* _input, u32* _index, u32 _length)
   while (*_index <= _length - 5)
   {
     if (_input[*_index + 0] == 0x50 &&
-      _input[*_index + 1] == 0x69 &&
-      _input[*_index + 2] == 0x61 &&
-      _input[*_index + 3] == 0x6e &&
-      _input[*_index + 4] == 0x6f)
+        _input[*_index + 1] == 0x69 &&
+        _input[*_index + 2] == 0x61 &&
+        _input[*_index + 3] == 0x6e &&
+        _input[*_index + 4] == 0x6f)
     {
       *_index += 5;
       return true;
@@ -106,17 +106,18 @@ std::vector<Piano::note> LoadNotesFromFile(const char* _file)
   u32 cycles = 0; // Rename to "noteCount"
 
   // Determine start position =====
-  if (input[21] >= (fileSize - 22))
+  if (input[37] == 0)
+  {
+    readIndex = 41;
+  }
+  else if (input[21] >= (fileSize - 22))
   {
     readIndex = 37;
   }
-  else
+  else if (!SearchForFileStart(input, &readIndex, fileSize))
   {
-    if (!SearchForFileStart(input, &readIndex, fileSize))
-    {
-      printf("Piano not found\n");
-      return {};
-    }
+    printf("Piano not found\n");
+    return {};
   }
 
   u32 end = SearchForFileEnd(input, fileSize);
@@ -131,16 +132,14 @@ std::vector<Piano::note> LoadNotesFromFile(const char* _file)
   {
     // Delta time =====
     ReadDeltaTime(input, readIndex, deltaTime);
-
     deltaTimes.push_back(deltaTime);
 
     // Pressed =====
 
-    // Sub-40ms inputs copy the action of the previous note
+    // Inputs copy the action of the previous note
     if (input[readIndex] < 0x80)
     {
       actions.push_back(actions.back());
-      readIndex++;
 
       // Note =====
       noteNumbers.push_back(input[readIndex]);

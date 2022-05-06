@@ -13,6 +13,7 @@
 #include <GLFW/glfw3.h>
 
 #include <stdarg.h>
+#include <pthread.h>
 
 namespace Piano {
 
@@ -74,6 +75,15 @@ namespace Piano {
     void Run(ApplicationSettings* _settings);
 
     void ExecuteCommand(const char* _command);
+    u32 CreateThread(void*(*_function)(void*))
+    {
+      return Piano::Platform::StartThread(_function);
+    }
+
+    void KillThread(u32 _thread)
+    {
+      Piano::Platform::EndThread(_thread);
+    }
 
     void PlaceNoteOnTimeline(u32 _note, f32 _startTime, f32 _duration);
     void PushNotesTimelineToRenderer();

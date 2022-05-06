@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <thread>
-#include <vector>
 #include <pthread.h>
 
 //std::thread threads[64];

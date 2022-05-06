@@ -334,3 +334,13 @@ void Piano::Application::SetRenderOctaveLines(b8 _value)
   Piano::Renderer::SetRenderOctaveNotes(_value);
 }
 
+u32 CreateThread(void*(*_function)(void*))
+{
+  return Piano::Platform::StartThread(_function);
+}
+
+void KillThread(u32 _thread)
+{
+  Piano::Platform::EndThread(_thread);
+}
+
